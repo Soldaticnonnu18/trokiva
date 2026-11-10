@@ -278,3 +278,12 @@ Date : 10 novembre 2026.
 - L'identité d'administration du test est uniquement l'UUID d'un compte temporaire dans la base jetable. Aucune modification des comptes et secrets de production.
 - **État GitHub Actions non confirmé** : le connecteur GitHub n'expose pas ici les runs `push` du workflow et `get_commit_combined_status` renvoie une liste vide. Vérifier l'onglet Actions du dépôt et examiner le journal du job `postgres-integration` avant de déclarer ce test PASS.
 - Les changements de ce passage portent sur le test d'intégration et la documentation : aucun déploiement Render nécessaire.
+
+
+## 10/11/2026 — sécurisation environnement Render avant raccordement PostgreSQL
+- Base `trokiva-db` existante contrôlée via connecteur Render : PostgreSQL 17, Francfort, statut `available`, plan gratuit, expiration annoncée 10/12/2026. Aucune base supplémentaire créée.
+- Service `trokiva-api` contrôlé, région Francfort, branche `main`, auto-déploiement désactivé.
+- Variables du service modifiées **réellement sur Render** (fusion sans écraser les autres) : `ENABLE_REGISTRATION=false`, `ENABLE_EXCHANGES=false`, `RUN_MIGRATIONS_ON_BOOT=false`.
+- Les secrets PostgreSQL ne sont pas exposés par le connecteur Render ; `DATABASE_URL` n'a pas été configurée. L'URL interne doit être saisie directement depuis le tableau de bord Render de la base dans l'environnement du service API, sans être transmise dans la conversation.
+- Render a déclenché le déploiement `dep-dbpjv9k9v7es73c3pi80` sur le commit `a66e0877`. Logs de construction : 17 tests réussis, 1 test d'intégration PostgreSQL explicitement ignoré dans Render. Dernier état consulté au moment de cette note : `update_in_progress`.
+- Étape suivante après saisie privée de l'URL : confirmer `databaseConfigured:true`, lancer migration contrôlée des neuf tables avec `RUN_MIGRATIONS_ON_BOOT=true`, vérifier `/api/ready`, puis remettre le drapeau à `false`. Ne pas activer les inscriptions ou les échanges avant vérification des e-mails et des transactions avec vrais comptes.
