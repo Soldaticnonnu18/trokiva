@@ -158,9 +158,25 @@ async function loadOffers(){
    if(incoming){add('Accepter','accept');add('Refuser','decline')}
    else add('Annuler','cancel');
   }
-  if(offer.status==='accepted')add('Conversation privée',()=>openConversation(offer.id,offer.listing_title||'Échange'));
+  if(offer.status==='accepted'){
+   add('Conversation privée',()=>openConversation(offer.id,offer.listing_title||'Échange'));
+   if(offer.listing_state==='exchanged')info.append(safeText('p','Échange confirmé par les deux membres.'));
+   else{
+    info.append(safeText('p',offer.confirmation_count===1?'Une confirmation sur deux reçue.':'Remise non encore confirmée.'));
+    if(!offer.confirmed_by_me)add('Confirmer la remise',()=>confirmExchange(offer.id));
+    else info.append(safeText('p','Vous avez confirmé la remise. En attente de l’autre membre.'));
+   }
+  }
   card.append(info,buttons);host.append(card);
  }
+}
+async function confirmExchange(offerId){
+ if(!confirm('Confirmez uniquement si vous avez réellement remis ou reçu l’objet convenu. Cette confirmation est définitive. Continuer ?'))return;
+ try{
+  const result=await api('/api/my/offers/'+offerId+'/confirm',{method:'POST',body:'{}'});
+  await Promise.all([loadOffers(),loadListings(),loadPublicListings()]);
+  feedback(result.completed?'Échange confirmé par les deux membres.':'Votre confirmation est enregistrée. En attente de l’autre membre.');
+ }catch(e){feedback(e.message)}
 }
 async function openConversation(offerId,title){
  const old=el('exchange-conversation');
