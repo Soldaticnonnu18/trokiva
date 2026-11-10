@@ -32,15 +32,27 @@ body{background:#fff}.wrap{max-width:1260px}.top{height:76px}.brand{font-size:24
 </style><style id="trokiva-mobile-history">
 .mobile-history{display:none}
 @media(max-width:760px){
- .mobile-history{display:flex;align-items:center;gap:7px;margin-left:auto;flex-shrink:0}
- .mobile-history button{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;border:1px solid #d6e2d0;font-size:25px;line-height:1;font-weight:700;color:#124e46;background:#fff;padding:0;touch-action:manipulation}
+ .top.wrap{padding-left:16px;padding-right:16px;gap:8px}
+ .top .brand{min-width:0;white-space:nowrap;flex-shrink:1}
+ .mobile-history{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0}
+ .mobile-history button{display:grid;place-items:center;width:40px;height:40px;min-width:40px;border-radius:13px;border:1px solid #d6e2d0;font-size:20px;line-height:1;font-weight:650;color:#124e46;background:#fff;padding:0;touch-action:manipulation}
  .mobile-history #nav-back{background:#c5ef85;border-color:#c5ef85}
  .mobile-history button:disabled{opacity:.38;cursor:default}
  .mobile-history button:not(:disabled):active{transform:scale(.97)}
  .mobile-history button:focus-visible{outline:3px solid #124e46;outline-offset:2px}
- .top .brand{min-width:0;white-space:nowrap}
 }
-@media(max-width:360px){.mobile-history button{width:38px;height:38px}.mobile-history{gap:5px}.top .brand{font-size:19px}}
+@media(max-width:380px){
+ .top.wrap{padding-left:12px;padding-right:12px;gap:6px}
+ .top .brand{font-size:19px;gap:5px}
+ .top .original-logo{width:29px;height:25px}
+ .mobile-history{gap:5px}
+ .mobile-history button{width:38px;height:38px;min-width:38px;font-size:19px;border-radius:12px}
+}
+@media(max-width:330px){
+ .top .brand{font-size:17px}
+ .top .original-logo{width:27px;height:23px}
+ .mobile-history button{width:36px;height:36px;min-width:36px}
+}
 </style></head><body>
 <header><div class="wrap top"><a class="brand" href="#accueil"><img class="original-logo" src="/assets/trokiva-symbol.svg" alt="" />TROKIVA</a><div class="mobile-history" role="group" aria-label="Parcours des pages"><button id="nav-back" type="button" aria-label="Revenir à la page précédente" title="Retour" disabled><span aria-hidden="true">←</span></button><button id="nav-forward" type="button" aria-label="Aller à la page suivante" title="Suivant" disabled><span aria-hidden="true">→</span></button></div><nav class="nav" aria-label="Navigation principale"><button data-page="accueil">Accueil</button><button data-page="explorer">Explorer</button><button data-page="communautes">Communautés</button><button data-page="messages">Messages</button></nav><button class="profile" data-page="profil">Mon espace</button></div></header>
 <main>
