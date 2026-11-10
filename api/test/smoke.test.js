@@ -40,6 +40,9 @@ test('API sans secrets : aucun compte ni catalogue exposé',async()=>{
   const resetPage=await fetch(base+'/reset-password.html');
   assert.equal(resetPage.status,200);
   assert.match(await resetPage.text(),/Nouveau mot de passe/);
+  const brandAsset=await fetch(base+'/assets/trokiva-symbol.svg');
+  assert.equal(brandAsset.status,200);
+  assert.match(brandAsset.headers.get('content-type')||'',/svg/);
   const memberPage=await fetch(base+'/compte.html');
   assert.equal(memberPage.status,200);
   const htmlMember=await memberPage.text();
