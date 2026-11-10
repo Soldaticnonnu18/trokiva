@@ -329,3 +329,11 @@ Date : 10 novembre 2026.
 - Correctif côté API de `GET /api/my/offers/:id/messages` : 404 quand l'offre acceptée n'est pas accessible au compte connecté, 200 et tableau vide pour une conversation autorisée sans messages. Test de non-régression statique et test d'intégration PostgreSQL isolé mis à jour.
 - Déploiement Render `dep-dbpkct9srm7s73amrjo0` confirmé **live**, commit `66ce7e78`. Journaux : **19 tests réussis / 0 échec / 1 ignoré sur Render** ; `TROKIVA database schema readiness: ready`.
 - Aucune création de compte ni envoi de confirmation e-mail réel n'a été effectué ; `ENABLE_REGISTRATION=false` et `ENABLE_EXCHANGES=false` restent en place.
+
+
+## 10/11/2026 — Liens de validation des comptes renforcés
+- Une demande de renvoi d'e-mail invalide désormais les précédents liens de vérification non utilisés du même compte, à l'intérieur d'une transaction verrouillée sur le compte.
+- Une vérification réussie consomme le lien utilisé et révoque les autres liens de vérification du compte. Le verrouillage de compte empêche les validations concurrentes incohérentes entre renvoi et activation.
+- Tests de contrôle statique et scénario d'intégration PostgreSQL isolé ajoutés pour vérifier usage unique et invalidation. **Ce scénario PostgreSQL reste à confirmer par GitHub Actions** ; il n'est pas exécuté par le service Render.
+- Déploiement API `dep-dbpkengu01pc73dk4du0` confirmé **live** sur commit `5e4733c6`. Logs de build : **20 pass / 0 fail / 1 skipped** ; démarrage : `TROKIVA database schema readiness: ready`.
+- Aucune activation des inscriptions ou des échanges, aucun envoi d'e-mail réel. L'adresse de contact habituelle demeure conservée.
