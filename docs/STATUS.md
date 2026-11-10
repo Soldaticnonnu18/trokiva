@@ -235,3 +235,10 @@ Date : 10 novembre 2026.
 - Tests ajoutés pour contraintes de confirmation et refus sans base.
 - À valider avant ouverture : transactions PostgreSQL avec deux comptes réels, litiges/recours en cas de non-remise, procédures de modération des échanges et préservation des données.
 - **Aucune remise physique réelle testée** ; le bouton ne démontre pas à lui seul qu'un objet a changé de mains.
+
+
+## Confirmation du déploiement de la remise bilatérale
+- Première tentative `dep-dbpjio0m7kps73b4e7q0` bloquée à la construction : une assertion exigeait encore que `exchange_messages` soit la dernière table déclarée dans le schéma.
+- Test de schéma corrigé sans desserrer le contrôle ; second déploiement `dep-dbpjj63rjlhs7383occ0`, commit `464f21fe`, confirmé **live**.
+- Journaux de construction Render : **16 tests réussis sur 16, 0 échec**.
+- Neuf tables désormais prévues ; **aucune migration effectuée** sur PostgreSQL tant que `DATABASE_URL` privée n'est pas renseignée. Aucun échange réel effectué ni certifié par les tests.
