@@ -76,7 +76,7 @@ async function userFromRequest(req){
 }
 function csrfOk(req){const host=req.headers.host;const reqOrigin=req.headers.origin;if(reqOrigin){try{return new URL(reqOrigin).host===host}catch{return false}}const site=req.headers['sec-fetch-site'];return site==='same-origin'||site==='none'}
 async function serve(res,name){
- const types={'index.html':'text/html; charset=utf-8','manifest.webmanifest':'application/manifest+json','icon.svg':'image/svg+xml','sw.js':'text/javascript; charset=utf-8','verify.html':'text/html; charset=utf-8','reset-password.html':'text/html; charset=utf-8'};
+ const types={'compte.html':'text/html; charset=utf-8','index.html':'text/html; charset=utf-8','manifest.webmanifest':'application/manifest+json','icon.svg':'image/svg+xml','sw.js':'text/javascript; charset=utf-8','verify.html':'text/html; charset=utf-8','reset-password.html':'text/html; charset=utf-8'};
  const type=types[name];if(!type)return replyError(res,404,'Introuvable');
  try{const content=await fs.readFile(path.join(base,name));res.writeHead(200,{'content-type':type,'cache-control':name==='sw.js'?'no-cache':'public, max-age=120'});res.end(content)}catch{replyError(res,404,'Introuvable')}
 }
@@ -247,6 +247,34 @@ const routed=async(req,res)=>{
     return json(res,201,{listing:data.rows[0]});
    }
   }
+  const publish=p.match(/^\/api\/my\/listings\/([a-f0-9-]{36})\/publish$/);
+  if(publish && req.method==='POST'){
+   const u=await userFromRequest(req);
+   if(!u)return replyError(res,401,'Connexion nécessaire');
+   if(!rateLimit(req,'publish',12,60*60*1000))return replyError(res,429,'Trop de publications');
+   const result=await pool.query(
+    "UPDATE listings SET state='published',updated_at=now() WHERE id=$1 AND owner_id=$2 AND state='draft' AND length(trim(title))>=3 AND length(trim(category))>0 AND length(trim(description))>=20 AND length(trim(city))>=2 RETURNING id,state,title,created_at",
+    [publish[1],u.id]
+   );
+   if(!result.rowCount)return replyError(res,422,'Annonce introuvable ou incomplète : description de 20 caractères et ville requises');
+   return json(res,200,{listing:result.rows[0]});
+  }
+  const hide=p.match(/^\/api\/my\/listings\/([a-f0-9-]{36})\/hide$/);
+  if(hide && req.method==='POST'){
+   const u=await userFromRequest(req);
+   if(!u)return replyError(res,401,'Connexion nécessaire');
+   const result=await pool.query("UPDATE listings SET state='hidden',updated_at=now() WHERE id=$1 AND owner_id=$2 AND state='published' RETURNING id,state",[hide[1],u.id]);
+   if(!result.rowCount)return replyError(res,404,'Annonce introuvable ou non publiée');
+   return json(res,200,{listing:result.rows[0]});
+  }
+  const restore=p.match(/^\/api\/my\/listings\/([a-f0-9-]{36})\/restore$/);
+  if(restore && req.method==='POST'){
+   const u=await userFromRequest(req);
+   if(!u)return replyError(res,401,'Connexion nécessaire');
+   const result=await pool.query("UPDATE listings SET state='draft',updated_at=now() WHERE id=$1 AND owner_id=$2 AND state='hidden' RETURNING id,state",[restore[1],u.id]);
+   if(!result.rowCount)return replyError(res,404,'Annonce introuvable ou non masquée');
+   return json(res,200,{listing:result.rows[0]});
+  }
   const m=p.match(/^\/api\/my\/listings\/([a-f0-9-]{36})$/);
   if(m){
    const u=await userFromRequest(req);if(!u)return replyError(res,401,'Connexion nécessaire');
@@ -265,7 +293,7 @@ const routed=async(req,res)=>{
   return replyError(res,404,'Route API introuvable');
  }
  if(req.method!=='GET'&&req.method!=='HEAD')return replyError(res,405,'Méthode non autorisée');
- const pages={'/':'index.html','/index.html':'index.html','/manifest.webmanifest':'manifest.webmanifest','/icon.svg':'icon.svg','/sw.js':'sw.js','/verify.html':'verify.html','/reset-password.html':'reset-password.html'};
+ const pages={'/compte.html':'compte.html','/':'index.html','/index.html':'index.html','/manifest.webmanifest':'manifest.webmanifest','/icon.svg':'icon.svg','/sw.js':'sw.js','/verify.html':'verify.html','/reset-password.html':'reset-password.html'};
  const file=pages[p];return file?serve(res,file):replyError(res,404,'Introuvable');
 };
 const server=http.createServer((req,res)=>{routed(req,res).catch(err=>{console.error('Request error',err.code||err.name||'unknown');if(!res.headersSent)replyError(res,err.status||500,err.status?err.message:'Erreur serveur');else res.end()})});
