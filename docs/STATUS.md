@@ -315,3 +315,10 @@ Date : 10 novembre 2026.
 - Resend : un seul domaine d'envoi vérifié, appartenant à un autre projet. Aucun domaine expéditeur TROKIVA validé ; **ne pas activer** `ENABLE_REGISTRATION` ni réutiliser cet autre domaine.
 - `ENABLE_EXCHANGES=false`, `RUN_MIGRATIONS_ON_BOOT=false` : valeurs réappliquées lors de la phase de migration précédente ; pas d'ouverture publique.
 - Les transactions PostgreSQL réelles entre comptes authentifiés restent à valider avec le workflow CI et des comptes de test contrôlés avant d'autoriser une mise en service.
+
+
+## 10/11/2026 — Adresse de contact conservée et accès privé aux conversations
+- Décision utilisateur : conserver l'adresse e-mail habituelle comme contact et adresse de gestion ; ne pas imposer une boîte par projet. Cela ne dispense pas de disposer d'un expéditeur techniquement autorisé/vérifié pour les e-mails automatiques. Aucun expéditeur d'un autre projet n'est réutilisé.
+- Correctif `GET /api/my/offers/:id/messages` : une offre introuvable ou inaccessible retourne désormais 404, au lieu d'une réponse 200 avec liste vide. Les deux participants d'une offre acceptée obtiennent toujours 200 avec `items:[]` si aucun message n'a été échangé.
+- Sélection SQL protégée par identifiants de participants et statut `accepted` ; nouveaux contrôles statiques et test d'intégration PostgreSQL isolé (refus tiers / conversation vide autorisée).
+- Inscriptions et échanges publics maintenus fermés. Les tests d'intégration PostgreSQL isolés et la chaîne e-mail n'ont pas encore de validation de production.
