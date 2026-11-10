@@ -88,3 +88,11 @@ test('Two-party exchange confirmation requires distinct participants and locks r
  assert.match(server,/UPDATE listings SET state='exchanged'/);
  assert.match(server,/moderation_hidden_at IS NULL RETURNING id/);
 });
+
+test('All database API routes refuse incomplete migrations before reading or writing data',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+ assert.match(server,/if\(p\.startsWith\('\/api\/'\)\)\{[\s\S]*?if\(!pool\)return replyError\(res,503,[\s\S]*?if\(!\(await requireReady\(res\)\)\)return;/);
+ assert.match(server,/if\(req\.method==='GET'&&p==='\/api\/listings'\)[\s\S]*?if\(!\(await requireReady\(res\)\)\)return;/);
+ assert.match(server,/if\(req\.method==='GET'&&p==='\/api\/me'\)[\s\S]*?if\(!\(await requireReady\(res\)\)\)return;/);
+});
