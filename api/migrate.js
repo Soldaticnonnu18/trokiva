@@ -12,8 +12,8 @@ export async function migrateDatabase(databaseUrl = process.env.DATABASE_URL) {
   await client.query('SELECT pg_advisory_lock(490017,1)');
   try {
    await client.query(sql);
-   const result=await client.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename IN ('users','email_verifications','password_resets','sessions','listings','exchange_offers','listing_reports','exchange_messages') ORDER BY tablename");
-   if(result.rowCount!==8)throw new Error('Migration incomplète : huit tables attendues');
+   const result=await client.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename IN ('users','email_verifications','password_resets','sessions','listings','exchange_offers','listing_reports','exchange_messages','exchange_confirmations') ORDER BY tablename");
+   if(result.rowCount!==9)throw new Error('Migration incomplète : neuf tables attendues');
    return result.rows.map(x=>x.tablename);
   } finally {
    await client.query('SELECT pg_advisory_unlock(490017,1)');
