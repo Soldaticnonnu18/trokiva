@@ -305,3 +305,13 @@ Date : 10 novembre 2026.
 - Déploiement final `dep-dbpk7avf3r2c738co1b0` : **live** (commit `4d981843`), tests de build **17 pass, 0 fail, 1 skipped** (intégration PostgreSQL jetable réservée à GitHub Actions).
 - Les endpoints publics `/api/health` et `/api/ready` n'ont pas pu être ouverts depuis le navigateur de contrôle : le `ready:true` en production reste à confirmer malgré le succès du journal de migration.
 - **Ne pas activer les comptes ni les échanges** avant la validation e-mail TROKIVA, le statut `ready:true`, la recette entre membres, les protections contre abus et la politique de conservation des données. Base gratuite expire le 10/12/2026.
+
+
+## 10/11/2026 — PostgreSQL prêt confirmé par le démarrage de production
+- API modifiée pour journaliser l'état vérifié du schéma PostgreSQL au lancement, sans afficher de chaînes de connexion ni de secrets. Commit source `42283efc` + test `89f52d01`.
+- Déploiement Render `dep-dbpkar5g1s2s73doq7v0` confirmé **live** sur commit `89f52d01`.
+- Journal de démarrage de production : **`TROKIVA database schema readiness: ready`**, `TROKIVA API listening on port 10000`. La base et les colonnes attendues répondent donc effectivement à l'API déployée.
+- Construction Render : **18 tests réussis, 0 échec, 1 test PostgreSQL jetable ignoré volontairement** (19 tests au total).
+- Resend : un seul domaine d'envoi vérifié, appartenant à un autre projet. Aucun domaine expéditeur TROKIVA validé ; **ne pas activer** `ENABLE_REGISTRATION` ni réutiliser cet autre domaine.
+- `ENABLE_EXCHANGES=false`, `RUN_MIGRATIONS_ON_BOOT=false` : valeurs réappliquées lors de la phase de migration précédente ; pas d'ouverture publique.
+- Les transactions PostgreSQL réelles entre comptes authentifiés restent à valider avec le workflow CI et des comptes de test contrôlés avant d'autoriser une mise en service.
