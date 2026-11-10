@@ -250,3 +250,9 @@ Date : 10 novembre 2026.
 - `/api/health` et `/api/ready` restent accessibles pour diagnostiquer le raccordement.
 - La procédure `docs/RENDER_DATABASE_SETUP.md` est alignée sur **neuf tables**, et rappelle de maintenir `ENABLE_REGISTRATION=false` et `ENABLE_EXCHANGES=false` jusqu'à la recette réelle.
 - Aucun compte, message ou objet fictif n'a été créé ; la connexion privée PostgreSQL n'a pas été installée ni la migration appliquée.
+
+
+## Vérification de production — verrou global du schéma
+- API `dep-dbpjm19srm7s73av1qj0` confirmée `live` sur commit `5b70c030`.
+- Journaux de construction Render : **17 tests réussis sur 17, 0 échec**.
+- La réussite de ces tests ne prouve pas le raccordement PostgreSQL : `DATABASE_URL` reste à configurer, la migration à exécuter et les recettes de véritables échanges à effectuer.
