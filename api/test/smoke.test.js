@@ -17,8 +17,13 @@ test('API sans secrets : aucun compte ni catalogue exposé',async()=>{
  try{
   await waitFor(base+'/api/health');
   const health=await(await fetch(base+'/api/health')).json();
-  assert.equal(health.database,false);
+  assert.equal(health.databaseConfigured,false);
   assert.equal(health.registration,'disabled');
+  const readiness=await fetch(base+'/api/ready');
+  assert.equal(readiness.status,503);
+  const readinessBody=await readiness.json();
+  assert.equal(readinessBody.ready,false);
+  assert.equal(readinessBody.database,'unconfigured');
   const listings=await fetch(base+'/api/listings');
   assert.equal(listings.status,503);
   const register=await fetch(base+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'demo@example.org',password:'sufficientlyLongPassword'})});
