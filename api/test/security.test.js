@@ -71,7 +71,7 @@ test('Private messages require accepted offer, participant and active listing',a
  assert.match(server,/e\.status='accepted'/);
  assert.match(server,/e\.sender_id=\$2 OR e\.recipient_id=\$2/);
  assert.match(server,/l\.moderation_hidden_at IS NULL/);
- assert.match(server,/const requiredTables=\[[^\]]*'exchange_messages'\]/);
+ assert.match(server,/const requiredTables=\[[^\]]*'exchange_messages','exchange_confirmations'\]/);
 });
 
 test('Two-party exchange confirmation requires distinct participants and locks reservation',async()=>{
