@@ -107,3 +107,12 @@ Date : 10 novembre 2026.
 - L'authentification reste indisponible en production tant que `DATABASE_URL`, les cinq tables et l'expéditeur TROKIVA ne sont pas validés ; le statut Render `live` ne doit pas être confondu avec une plateforme prête à vendre/échanger.
 - Les deux sous-domaines sont distincts : l'authentification est prévue sur le domaine `trokiva-api.onrender.com`, sous **même origine** que ses routes API. Une intégration définitive sous le domaine principal reste à programmer.
 - Les images, la modération, les signalements et les propositions de troc sont encore des chantiers nécessaires avant ouverture publique.
+
+
+## Vérification des déploiements — suite du 10 novembre 2026
+- Dernier commit déployé pour PWA et API : `3716f1c6adf001211ceb48dc64d9c489447ae358`.
+- API Render : déploiement `dep-dbpii5ff3r2c7388r600` confirmé `live`.
+- PWA Render : déploiement `dep-dbpii9qjnfac739hpsu0` confirmé `live`.
+- Journaux Render API : `postinstall` exécuté, vérification de syntaxe et deux tests hors base **PASS 2/2, FAIL 0**.
+- Les tests ne couvrent pas encore une transaction réelle PostgreSQL, un parcours e-mail ni un test navigateur responsive complet.
+- Ni `DATABASE_URL` ni le schéma PostgreSQL n'ont été activés/exécutés durant cette opération ; aucune publication d'annonce réelle confirmée.
