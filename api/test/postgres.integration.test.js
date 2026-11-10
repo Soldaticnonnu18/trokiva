@@ -35,7 +35,7 @@ test('PostgreSQL réel isolé : inscription vérifiée, annonce, offre, messages
    const digest=(await scrypt(password,salt,64)).toString('hex');
    await pool.query('INSERT INTO users(id,email,password_hash,password_salt,email_verified_at) VALUES ($1,$2,$3,$4,now())',[u.id,u.email,digest,salt]);
   }
-  child=spawn(process.execPath,['server.js'],{cwd:new URL('../',import.meta.url),env:{...process.env,PORT:'45671',DATABASE_URL:url,ENABLE_REGISTRATION:'false',ENABLE_EXCHANGES:'true',RUN_MIGRATIONS_ON_BOOT:'false'},stdio:'ignore'});
+  child=spawn(process.execPath,['server.js'],{cwd:new URL('../',import.meta.url),env:{...process.env,PORT:'45671',DATABASE_URL:url,ENABLE_REGISTRATION:'false',ENABLE_EXCHANGES:'true',TROKIVA_ADMIN_USER_ID:users[0].id,RUN_MIGRATIONS_ON_BOOT:'false'},stdio:'ignore'});
   let ready=false;
   for(let i=0;i<60;i++){
    try{const r=await fetch(origin+'/api/ready');if(r.ok){ready=true;break}}catch{}
@@ -76,6 +76,24 @@ test('PostgreSQL réel isolé : inscription vérifiée, annonce, offre, messages
   assert.equal(second.result.completed,true);
   const state2=await pool.query('SELECT state FROM listings WHERE id=$1',[id]);
   assert.equal(state2.rows[0].state,'exchanged');
+  // A separate published listing validates moderation without changing the completed exchange.
+  const secondListing=await call('/api/my/listings','POST',{title:'Deuxième objet de test',category:'Divers',description:'Deuxième objet exclusivement réservé aux tests isolés.',wanted:'Un objet différent',city:'Lyon'},cookies[0]);
+  assert.equal(secondListing.response.status,201);
+  const secondId=secondListing.result.listing.id;
+  assert.equal((await call('/api/my/listings/'+secondId+'/publish','POST',{},cookies[0])).response.status,200);
+  const report=await call('/api/reports','POST',{listingId:secondId,reason:'fraud',details:'Signalement contrôlé dans la base jetable.'},cookies[1]);
+  assert.equal(report.response.status,201,JSON.stringify(report.result));
+  assert.equal((await call('/api/reports','POST',{listingId:secondId,reason:'fraud'},cookies[1])).response.status,409);
+  const queue=await call('/api/admin/reports','GET',undefined,cookies[0]);
+  assert.equal(queue.response.status,200);
+  assert.ok(queue.result.items.some(item=>item.id===report.result.report.id));
+  assert.equal((await call('/api/admin/reports/'+report.result.report.id+'/hide','POST',{},cookies[1])).response.status,404);
+  assert.equal((await call('/api/admin/reports/'+report.result.report.id+'/hide','POST',{},cookies[0])).response.status,200);
+  assert.equal((await call('/api/my/listings/'+secondId+'/restore','POST',{},cookies[0])).response.status,404);
+  const moderated=await pool.query('SELECT state,moderation_hidden_at FROM listings WHERE id=$1',[secondId]);
+  assert.equal(moderated.rows[0].state,'hidden');
+  assert.ok(moderated.rows[0].moderation_hidden_at);
+
  }finally{
   child?.kill('SIGTERM');
   await pool.end();
