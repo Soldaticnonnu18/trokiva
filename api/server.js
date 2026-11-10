@@ -383,4 +383,4 @@ if(process.env.RUN_SERVER!=='false') {
  }
  server.listen(port,()=>console.log('TROKIVA API listening on port',port));
 }
-export {server,validListing};
+export {server,validListing,csrfOk};
