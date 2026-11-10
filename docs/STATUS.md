@@ -337,3 +337,10 @@ Date : 10 novembre 2026.
 - Tests de contrôle statique et scénario d'intégration PostgreSQL isolé ajoutés pour vérifier usage unique et invalidation. **Ce scénario PostgreSQL reste à confirmer par GitHub Actions** ; il n'est pas exécuté par le service Render.
 - Déploiement API `dep-dbpkengu01pc73dk4du0` confirmé **live** sur commit `5e4733c6`. Logs de build : **20 pass / 0 fail / 1 skipped** ; démarrage : `TROKIVA database schema readiness: ready`.
 - Aucune activation des inscriptions ou des échanges, aucun envoi d'e-mail réel. L'adresse de contact habituelle demeure conservée.
+
+
+## 10/11/2026 — Sécurité réinitialisation du mot de passe
+- Les demandes successives de réinitialisation invalident désormais les anciens jetons en transaction, avec verrou de la ligne utilisateur ; une validation verrouille le même compte avant de consommer le jeton pour réduire les courses entre demande et consommation.
+- Les sessions du compte et les jetons restants sont révoqués après réinitialisation réussie (comportement déjà existant, maintenu et couvert par davantage de tests).
+- Un test statique de non-régression et un scénario d'intégration PostgreSQL isolé vérifient liens périmés, mot de passe remplacé et session révoquée.
+- **Aucun test PostgreSQL réel sur Render et aucune ouverture des inscriptions/échanges** ; résultat de GitHub Actions toujours à établir séparément. Ne pas annoncer zéro bug : les parcours humains et l'envoi e-mail exigent une recette.
