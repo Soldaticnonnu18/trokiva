@@ -28,3 +28,20 @@ test('PWA: local drafts are not removed by navigation',()=>{
  assert.match(html,/id="export-drafts"/);
  assert.match(html,/id="import-drafts"/);
 });
+
+test('Member portal: inline JavaScript and report controls are valid',()=>{
+ const account=fs.readFileSync(new URL('../../compte.html',import.meta.url),'utf8');
+ const scripts=[...account.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(x=>x[1]).filter(x=>x.trim());
+ assert.ok(scripts.length>0);
+ for(const source of scripts)assert.doesNotThrow(()=>new vm.Script(source));
+ assert.match(account,/api\/reports/);
+ assert.match(account,/api\/admin\/reports/);
+ assert.match(account,/id="moderation"/);
+});
+test('Database schema: reports are linked to real accounts and have an abuse-resistant unique key',()=>{
+ const schema=fs.readFileSync(new URL('../schema.sql',import.meta.url),'utf8');
+ assert.match(schema,/CREATE TABLE IF NOT EXISTS listing_reports/);
+ assert.match(schema,/UNIQUE\(listing_id,reporter_id\)/);
+ assert.match(schema,/REFERENCES users\(id\) ON DELETE CASCADE/);
+ assert.match(schema,/status IN \('open','reviewed','dismissed'\)/);
+});
