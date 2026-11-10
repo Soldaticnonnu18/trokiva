@@ -292,10 +292,10 @@ const routed=async(req,res)=>{
     throw e;
    }
   }
-  const adminEmail=(process.env.TROKIVA_ADMIN_EMAIL||'').trim().toLowerCase();
+  const adminId=(process.env.TROKIVA_ADMIN_USER_ID||'').trim().toLowerCase();
   if(p==='/api/admin/reports' || /^\/api\/admin\/reports\/[a-f0-9-]{36}\/(dismiss|hide)$/.test(p)){
    const u=await userFromRequest(req);
-   if(!u||!adminEmail||u.email!==adminEmail)return replyError(res,404,'Introuvable');
+   if(!u||!/^[a-f0-9-]{36}$/.test(adminId)||u.id!==adminId)return replyError(res,404,'Introuvable');
    if(req.method==='GET'&&p==='/api/admin/reports'){
     const rows=await pool.query(
      "SELECT r.id,r.listing_id,r.reason,r.details,r.status,r.created_at,l.title,l.state AS listing_state FROM listing_reports r JOIN listings l ON l.id=r.listing_id WHERE r.status='open' ORDER BY r.created_at ASC LIMIT 100"
