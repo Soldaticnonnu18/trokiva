@@ -242,7 +242,15 @@ const routed=async(req,res)=>{
    const q=await pool.query('SELECT id FROM users WHERE email=$1 AND email_verified_at IS NOT NULL AND disabled_at IS NULL',[email]);
    if(!q.rowCount)return json(res,202,generic);
    const token=createSecret();
-   await pool.query("INSERT INTO password_resets(id,user_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[randomUUID(),q.rows[0].id,hash(token)]);
+   const client=await pool.connect();
+   try{
+    await client.query('BEGIN');
+    const account=await client.query('SELECT id FROM users WHERE id=$1 AND email_verified_at IS NOT NULL AND disabled_at IS NULL FOR UPDATE',[q.rows[0].id]);
+    if(!account.rowCount){await client.query('ROLLBACK');return json(res,202,generic)}
+    await client.query('UPDATE password_resets SET consumed_at=now() WHERE user_id=$1 AND consumed_at IS NULL',[q.rows[0].id]);
+    await client.query("INSERT INTO password_resets(id,user_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[randomUUID(),q.rows[0].id,hash(token)]);
+    await client.query('COMMIT');
+   }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}finally{client.release()}
    try{await sendPasswordReset(email,token)}catch(e){
     console.error('Password reset email failure',e.name||'SendError');
     return replyError(res,503,'Service de messagerie temporairement indisponible');
@@ -262,7 +270,12 @@ const routed=async(req,res)=>{
    const client=await pool.connect();
    try{
     await client.query('BEGIN');
-    const q=await client.query('UPDATE password_resets SET consumed_at=now() WHERE token_hash=$1 AND consumed_at IS NULL AND expires_at>now() RETURNING user_id',[hash(token)]);
+    const candidate=await client.query('SELECT user_id FROM password_resets WHERE token_hash=$1 AND consumed_at IS NULL AND expires_at>now()',[hash(token)]);
+    if(!candidate.rowCount){await client.query('ROLLBACK');return replyError(res,400,'Lien expiré ou déjà utilisé')}
+    // Lock the account before updating the token to serialize request and reset operations.
+    const account=await client.query('SELECT id FROM users WHERE id=$1 AND email_verified_at IS NOT NULL AND disabled_at IS NULL FOR UPDATE',[candidate.rows[0].user_id]);
+    if(!account.rowCount){await client.query('ROLLBACK');return replyError(res,400,'Ce compte ne peut pas être réinitialisé')}
+    const q=await client.query('UPDATE password_resets SET consumed_at=now() WHERE token_hash=$1 AND user_id=$2 AND consumed_at IS NULL AND expires_at>now() RETURNING user_id',[hash(token),account.rows[0].id]);
     if(!q.rowCount){await client.query('ROLLBACK');return replyError(res,400,'Lien expiré ou déjà utilisé')}
     const updated=await client.query('UPDATE users SET password_hash=$2,password_salt=$3 WHERE id=$1 AND disabled_at IS NULL AND email_verified_at IS NOT NULL RETURNING id',[q.rows[0].user_id,digest,salt]);
     if(!updated.rowCount){await client.query('ROLLBACK');return replyError(res,400,'Ce compte ne peut pas être réinitialisé')}
