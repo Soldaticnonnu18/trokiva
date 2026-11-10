@@ -88,3 +88,12 @@ Date : 10 novembre 2026.
 - Test ajouté pour vérifier l'interdiction d'une migration sans URL PostgreSQL.
 - Procédure de configuration documentée dans `docs/RENDER_DATABASE_SETUP.md`.
 - **Limite non levée :** le connecteur actuel ne fournit pas l'URL interne de la base Render. L'initialisation effective des tables reste non exécutée ; aucune inscription publique n'est autorisée.
+
+
+## Poursuite — vérification de l'expéditeur et durcissement auth
+- Vérification directe dans Resend : seul le domaine `rendezelle.fr` est vérifié. Ce domaine appartient à un autre projet et ne doit pas servir aux e-mails TROKIVA.
+- Correction API : le renouvellement de mot de passe refuse désormais un utilisateur désactivé ou dont l'e-mail n'est pas vérifié, au lieu de renvoyer un faux succès.
+- Validation initiale de l'adresse e-mail resserrée.
+- Liste des conditions de lancement créée dans `docs/AUTH_RELEASE_CHECKLIST.md`.
+- Déploiement Render API `dep-dbpifh49v7es73c0d1c0` confirmé `live` sur le commit `3052415`.
+- Toujours bloqué : `DATABASE_URL` non configurée, migration non exécutée, domaine e-mail TROKIVA non vérifié. Aucune ouverture utilisateur.
