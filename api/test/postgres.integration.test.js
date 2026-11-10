@@ -12,7 +12,8 @@ const url=process.env.TROKIVA_TEST_DATABASE_URL;
 const scrypt=promisify(scryptCb);
 
 test('PostgreSQL réel isolé : inscription vérifiée, annonce, offre, messages et remise bilatérale', {skip:!url},async()=>{
- if(!/\b(trokiva_test|localhost|127\.0\.0\.1)\b/.test(url))throw new Error('Refus : URL de test non locale');
+ const target=new URL(url);
+ if(!['localhost','127.0.0.1'].includes(target.hostname) || target.pathname!=='/trokiva_test')throw new Error('Refus : PostgreSQL de test doit être local et dédié');
  const pool=new pg.Pool({connectionString:url});
  const origin='http://127.0.0.1:45671';
  let child;
