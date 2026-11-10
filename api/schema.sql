@@ -17,6 +17,15 @@ CREATE TABLE IF NOT EXISTS email_verifications (
  consumed_at timestamptz,
  created_at timestamptz NOT NULL DEFAULT now()
 );
+CREATE TABLE IF NOT EXISTS password_resets (
+ id uuid PRIMARY KEY,
+ user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ token_hash text NOT NULL UNIQUE,
+ expires_at timestamptz NOT NULL,
+ consumed_at timestamptz,
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS password_resets_user_idx ON password_resets(user_id);
 CREATE TABLE IF NOT EXISTS sessions (
  id uuid PRIMARY KEY,
  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
