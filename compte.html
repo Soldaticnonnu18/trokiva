@@ -27,7 +27,7 @@
 (()=>{
 'use strict';
 const el=id=>document.getElementById(id), forms=['login','register','forgot','resend'];
-let loggedIn=false,editingId=null,items=[];
+let loggedIn=false,editingId=null,items=[],exchangesEnabled=false;
 const feedback=message=>{el('feedback').textContent=message};
 async function api(path,options={}){
  const response=await fetch(path,{credentials:'same-origin',...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});
@@ -45,6 +45,7 @@ async function readiness(){
  try{
   const r=await fetch('/api/ready',{cache:'no-store'});const data=await r.json();
   const health=await api('/api/health');
+  exchangesEnabled=health.exchanges==='enabled';
   if(!r.ok || !data.ready){el('server-status').textContent="Les comptes ne sont pas encore disponibles. La base de données et les tables ne sont pas prêtes.";el('anonymous').hidden=true;return}
   el('server-status').textContent=health.registration==='enabled'?'Comptes disponibles : inscription et connexion possibles.':'La base est prête. Les nouvelles inscriptions restent désactivées.';
   el('server-status').classList.remove('warning');
@@ -107,6 +108,7 @@ async function loadPublicListings(){
   const info=document.createElement('div');info.append(safeText('h3',listing.title),safeText('p',[(listing.category||''),(listing.city||'')].filter(Boolean).join(' · ')),safeText('p',listing.description||''));
   const actions=document.createElement('div');actions.className='actions';
   const button=document.createElement('button');button.type='button';button.className='btn secondary';button.textContent='Proposer un troc';
+  button.disabled=!exchangesEnabled;button.title=exchangesEnabled?'Envoyer une proposition':'Échanges en attente de validation';
   button.addEventListener('click',async()=>{
    const message=prompt('Décrivez ce que vous proposez en échange (10 à 600 caractères). Ne communiquez pas votre adresse personnelle.');
    if(message===null)return;
@@ -125,6 +127,7 @@ async function decideOffer(id,verb){
 }
 async function loadOffers(){
  const host=el('my-offers');host.replaceChildren();
+ if(!exchangesEnabled){host.append(safeText('p','Les propositions de troc seront disponibles après validation de la sécurité et de la base.'));return}
  const me=await api('/api/me');
  const data=await api('/api/my/offers');
  if(!data.items?.length){host.append(safeText('p','Aucune proposition reçue ou envoyée.'));return}
