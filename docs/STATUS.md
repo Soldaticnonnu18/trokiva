@@ -127,3 +127,15 @@ Date : 10 novembre 2026.
 - `compte.html` : le portail membre reprend désormais le véritable logo ; `api/server.js` expose la ressource de façon explicite.
 - Test API du logo ajouté. Le rendu iPhone et l'icône d'installation restent à valider visuellement après redéploiement.
 - La connexion DATABASE_URL, la migration PostgreSQL et les e-mails vérifiés ne sont toujours pas raccordés.
+
+
+## Navigation mobile — retour et suivant (10 novembre 2026)
+- Deux boutons visibles dans l'en-tête uniquement sur téléphone (`max-width:760px`) : Retour et Suivant, indépendants de la barre inférieure.
+- Navigation des sections basée sur `history.pushState`, `history.back`, `history.forward` et `popstate`, avec compteur d'historique propre à la PWA.
+- Les commandes sont désactivées lorsqu'aucune étape précédente/suivante interne n'est connue ; pas de redirection inventée ni de saut vers une page externe.
+- Compatibilité du stockage de session en mode restrictif iOS : erreurs `sessionStorage` traitées.
+- Le code de sauvegarde/export/import des brouillons locaux n'a pas été modifié par cette intervention.
+- Test syntaxique du JavaScript PWA, présence des boutons accessibles, fonctions d'historique et gestion des brouillons ajoutés à `api/test/navigation.test.js`.
+- Cache PWA incrémenté vers `trokiva-preview-v5`.
+- **Finitions différées selon demande** : tailles des textes, espaces, hauteur/arrondi des sections, homogénéisation mobile/ordinateur. Valider d'abord le fonctionnement réel de la navigation.
+- Les comptes, la connexion PostgreSQL, l'e-mail de vérification et les annonces publiques restent à valider séparément avant ouverture.
