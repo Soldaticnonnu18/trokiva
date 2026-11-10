@@ -79,4 +79,13 @@ CREATE TABLE IF NOT EXISTS listing_reports (
  CONSTRAINT listing_report_details CHECK(length(details)<=1000)
 );
 CREATE INDEX IF NOT EXISTS listing_reports_queue_idx ON listing_reports(created_at ASC) WHERE status='open';
+-- Messages are only exchanged after an offer is accepted.
+CREATE TABLE IF NOT EXISTS exchange_messages (
+ id uuid PRIMARY KEY,
+ offer_id uuid NOT NULL REFERENCES exchange_offers(id) ON DELETE CASCADE,
+ sender_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ content varchar(1200) NOT NULL CHECK(length(trim(content)) BETWEEN 1 AND 1200),
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS exchange_messages_offer_idx ON exchange_messages(offer_id,created_at,id);
 COMMIT;
