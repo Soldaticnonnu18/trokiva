@@ -12,7 +12,7 @@ async function waitFor(url){
  throw new Error('Serveur de test indisponible');
 }
 test('API sans secrets : aucun compte ni catalogue exposé',async()=>{
- child=spawn(process.execPath,['server.js'],{cwd:new URL('../',import.meta.url),env:{...process.env,PORT:String(port),DATABASE_URL:'',ENABLE_REGISTRATION:'false',RESEND_API_KEY:'',RESEND_FROM_EMAIL:''},stdio:'ignore'});
+ child=spawn(process.execPath,['server.js'],{cwd:new URL('../',import.meta.url),env:{...process.env,PORT:String(port),DATABASE_URL:'',RUN_MIGRATIONS_ON_BOOT:'false',ENABLE_REGISTRATION:'false',ENABLE_EXCHANGES:'false',RESEND_API_KEY:'',RESEND_FROM_EMAIL:''},stdio:'ignore'});
  const base='http://127.0.0.1:'+port;
  try{
   await waitFor(base+'/api/health');
