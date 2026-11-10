@@ -19,6 +19,8 @@
  <div class="card"><div class="actions"><h2>Mon compte</h2><button class="btn secondary" type="button" id="logout">Déconnexion</button></div><p id="identity" class="muted"></p><p class="small">Vos annonces en ligne sont distinctes des brouillons locaux de la PWA. Ne supprimez pas vos sauvegardes locales avant leur transfert.</p></div>
  <div class="card"><h2 id="listing-form-title">Préparer une annonce</h2><form id="listing-form"><div class="grid"><label class="field">Objet proposé<input name="title" minlength="3" maxlength="100" required></label><label class="field">Catégorie<select name="category" required><option value="">Choisir une catégorie</option><option>Mode et accessoires</option><option>Électronique</option><option>Maison</option><option>Livres et études</option><option>Sport et loisirs</option><option>Autres</option></select></label></div><label class="field">Description de l'objet<textarea name="description" maxlength="1200" placeholder="État, caractéristiques, accessoires…"></textarea></label><div class="grid"><label class="field">Ce que vous recherchez<input name="wanted" maxlength="100"></label><label class="field">Ville (sans adresse précise)<input name="city" maxlength="100"></label></div><div class="notice">Enregistrer crée un brouillon privé. La publication n'est possible qu'avec une description d'au moins 20 caractères et une ville.</div><div class="actions"><button class="btn" type="submit">Enregistrer le brouillon</button><button class="btn secondary" type="button" id="cancel-edit">Nouvelle annonce</button></div></form></div>
  <div class="card"><h2>Mes annonces</h2><div id="my-listings" aria-live="polite"></div></div>
+ <div class="card"><h2>Découvrir les objets réellement disponibles</h2><p class="muted small">Seules les annonces publiées par des membres vérifiés apparaîtront ici. Aucune annonce fictive.</p><div id="public-listings" aria-live="polite"></div></div>
+ <div class="card"><h2>Mes propositions de troc</h2><p class="muted small">Une proposition ne signifie pas qu'un échange a été effectué. Les modalités restent à convenir entre membres.</p><div id="my-offers" aria-live="polite"></div></div>
 </section>
 </main>
 <script>
@@ -37,7 +39,7 @@ function setTab(tab){for(const key of forms){el(key).hidden=key!==tab;const btn=
 document.querySelectorAll('[data-tab]').forEach(btn=>btn.addEventListener('click',()=>{feedback('');setTab(btn.dataset.tab)}));
 function setIdentity(user){loggedIn=!!user;el('anonymous').hidden=loggedIn;el('member').hidden=!loggedIn;if(user)el('identity').textContent='Connecté : '+user.email}
 async function refresh(){
- try{const me=await api('/api/me');setIdentity(me.user);if(me.user)await loadListings()}catch(e){feedback(e.message);setIdentity(null)}
+ try{const me=await api('/api/me');setIdentity(me.user);if(me.user)await Promise.all([loadListings(),loadPublicListings(),loadOffers()])}catch(e){feedback(e.message);setIdentity(null)}
 }
 async function readiness(){
  try{
@@ -59,7 +61,7 @@ for(const name of forms)el(name).addEventListener('submit',async e=>{
  const data=Object.fromEntries(new FormData(e.target));
  const routes={login:'/api/auth/login',register:'/api/auth/register',forgot:'/api/auth/request-password-reset',resend:'/api/auth/resend-verification'};
  try{const result=await api(routes[name],{method:'POST',body:JSON.stringify(data)});
-  if(name==='login'){setIdentity(result.user);e.target.reset();await loadListings();feedback('Connexion réussie.')}
+  if(name==='login'){setIdentity(result.user);e.target.reset();await Promise.all([loadListings(),loadPublicListings(),loadOffers()]);feedback('Connexion réussie.')}
   else{feedback(result.message||'Demande enregistrée.');e.target.reset()}
  }catch(err){feedback(err.message)}finally{button.disabled=false}
 });
@@ -94,6 +96,51 @@ async function loadListings(){
   if(item.state==='published')add('Masquer',()=>action(item.id,'hide'));
   if(item.state==='hidden')add('Repasser en brouillon',()=>action(item.id,'restore'));
   card.append(info,buttons);host.append(card)
+ }
+}
+async function loadPublicListings(){
+ const host=el('public-listings');host.replaceChildren();
+ const data=await api('/api/listings');
+ if(!data.items?.length){host.append(safeText('p','Aucune annonce publique pour le moment.'));return}
+ for(const listing of data.items){
+  const card=document.createElement('article');card.className='item';
+  const info=document.createElement('div');info.append(safeText('h3',listing.title),safeText('p',[(listing.category||''),(listing.city||'')].filter(Boolean).join(' · ')),safeText('p',listing.description||''));
+  const actions=document.createElement('div');actions.className='actions';
+  const button=document.createElement('button');button.type='button';button.className='btn secondary';button.textContent='Proposer un troc';
+  button.addEventListener('click',async()=>{
+   const message=prompt('Décrivez ce que vous proposez en échange (10 à 600 caractères). Ne communiquez pas votre adresse personnelle.');
+   if(message===null)return;
+   const trimmed=message.trim();
+   if(trimmed.length<10||trimmed.length>600){feedback('La proposition doit contenir entre 10 et 600 caractères.');return}
+   button.disabled=true;
+   try{await api('/api/my/offers',{method:'POST',body:JSON.stringify({listingId:listing.id,message:trimmed})});await loadOffers();feedback('Proposition envoyée au propriétaire de cette annonce.')}
+   catch(e){feedback(e.message)}finally{button.disabled=false}
+  });
+  actions.append(button);card.append(info,actions);host.append(card)
+ }
+}
+async function decideOffer(id,verb){
+ try{await api('/api/my/offers/'+id+'/'+verb,{method:'POST',body:'{}'});await Promise.all([loadOffers(),loadPublicListings(),loadListings()]);feedback(verb==='accept'?'Proposition acceptée : l’annonce est réservée.':verb==='decline'?'Proposition refusée.':'Proposition annulée.')}
+ catch(e){feedback(e.message)}
+}
+async function loadOffers(){
+ const host=el('my-offers');host.replaceChildren();
+ const me=await api('/api/me');
+ const data=await api('/api/my/offers');
+ if(!data.items?.length){host.append(safeText('p','Aucune proposition reçue ou envoyée.'));return}
+ for(const offer of data.items){
+  const incoming=offer.recipient_id===me.user?.id;
+  const label=incoming?'Reçue':'Envoyée';
+  const card=document.createElement('article');card.className='item';
+  const info=document.createElement('div');
+  info.append(safeText('h3',offer.listing_title||'Annonce indisponible'),safeText('p',label+' · '+offer.status),safeText('p',offer.message));
+  const buttons=document.createElement('div');buttons.className='actions';
+  const add=(caption,verb)=>{const b=document.createElement('button');b.type='button';b.className='btn secondary';b.textContent=caption;b.addEventListener('click',()=>decideOffer(offer.id,verb));buttons.append(b)};
+  if(offer.status==='pending'){
+   if(incoming){add('Accepter','accept');add('Refuser','decline')}
+   else add('Annuler','cancel');
+  }
+  card.append(info,buttons);host.append(card);
  }
 }
 readiness();
