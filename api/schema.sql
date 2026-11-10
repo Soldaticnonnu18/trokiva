@@ -64,4 +64,17 @@ CREATE TABLE IF NOT EXISTS exchange_offers (
 CREATE UNIQUE INDEX IF NOT EXISTS exchange_one_pending_per_sender_listing ON exchange_offers(listing_id,sender_id) WHERE status='pending';
 CREATE INDEX IF NOT EXISTS exchange_offers_received_idx ON exchange_offers(recipient_id,created_at DESC);
 CREATE INDEX IF NOT EXISTS exchange_offers_sent_idx ON exchange_offers(sender_id,created_at DESC);
+CREATE TABLE IF NOT EXISTS listing_reports (
+ id uuid PRIMARY KEY,
+ listing_id uuid NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+ reporter_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ reason text NOT NULL CHECK(reason IN ('prohibited','fraud','misleading','harassment','other')),
+ details varchar(1000) NOT NULL DEFAULT '',
+ status text NOT NULL DEFAULT 'open' CHECK(status IN ('open','reviewed','dismissed')),
+ reviewed_at timestamptz,
+ created_at timestamptz NOT NULL DEFAULT now(),
+ UNIQUE(listing_id,reporter_id),
+ CONSTRAINT listing_report_details CHECK(length(details)<=1000)
+);
+CREATE INDEX IF NOT EXISTS listing_reports_queue_idx ON listing_reports(created_at ASC) WHERE status='open';
 COMMIT;
