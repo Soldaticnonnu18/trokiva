@@ -393,3 +393,10 @@ Date : 10 novembre 2026.
 - Barre mobile ancrée au bas de l'écran avec safe-area iOS, fond opaque et rayon supérieur uniquement ; footer masqué dans la PWA mobile pour éviter sa bande derrière le dock ; contenu conservé en bureau.
 - `sw.js` : cache `trokiva-preview-v9`. Test smoke : vérification des règles critiques et des balises `style` équilibrées.
 - Ni les fonctions de navigation, ni les brouillons locaux, ni les données PostgreSQL, ni le logo n'ont été modifiés. Contrôle visuel sur iPhone réel encore nécessaire après déploiement.
+
+
+## 10/11/2026 — Déploiements vérifiés des corrections iPhone
+- PWA publique Render `dep-dbpl0bt9fdbs73f7a5j0` confirmée **live** avec corrections Explorer/Publier et dock mobile.
+- Premier déploiement API `dep-dbpl0dui0phs73cbd4kg` : **build_failed** à cause d'un motif regex incorrect dans le nouveau test `api/test/smoke.test.js` (pas d'erreur de l'API en production).
+- Test rectifié commit `5f6a3226` ; second déploiement API `dep-dbpl0qmk1f9s73ffh1t0` confirmé **live** : **21 tests réussis, 0 échec, 1 test PostgreSQL isolé ignoré** ; `TROKIVA database schema readiness: ready`.
+- Rendu sur véritable iPhone **à revérifier par capture** : tests de build ne remplacent pas une validation visuelle. Brouillons et logo original non modifiés.
