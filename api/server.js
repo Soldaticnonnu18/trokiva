@@ -219,9 +219,14 @@ const routed=async(req,res)=>{
    const client=await pool.connect();
    try{
     await client.query('BEGIN');
-    const q=await client.query('UPDATE email_verifications SET consumed_at=now() WHERE token_hash=$1 AND consumed_at IS NULL AND expires_at>now() RETURNING user_id',[hash(input.token)]);
+    const candidate=await client.query('SELECT user_id FROM email_verifications WHERE token_hash=$1 AND consumed_at IS NULL AND expires_at>now()',[hash(input.token)]);
+    if(!candidate.rowCount){await client.query('ROLLBACK');return replyError(res,400,'Lien expiré ou déjà utilisé')}
+    // Lock user first, matching resend-verification lock ordering.
+    const account=await client.query('SELECT id FROM users WHERE id=$1 AND email_verified_at IS NULL AND disabled_at IS NULL FOR UPDATE',[candidate.rows[0].user_id]);
+    if(!account.rowCount){await client.query('ROLLBACK');return replyError(res,400,'Lien expiré ou déjà utilisé')}
+    const q=await client.query('UPDATE email_verifications SET consumed_at=now() WHERE token_hash=$1 AND user_id=$2 AND consumed_at IS NULL AND expires_at>now() RETURNING user_id',[hash(input.token),account.rows[0].id]);
     if(!q.rowCount){await client.query('ROLLBACK');return replyError(res,400,'Lien expiré ou déjà utilisé')}
-    await client.query('UPDATE users SET email_verified_at=COALESCE(email_verified_at,now()) WHERE id=$1',[q.rows[0].user_id]);
+    await client.query('UPDATE users SET email_verified_at=now() WHERE id=$1',[q.rows[0].user_id]);
     await client.query('UPDATE email_verifications SET consumed_at=now() WHERE user_id=$1 AND consumed_at IS NULL',[q.rows[0].user_id]);
     await client.query('COMMIT');
     return json(res,200,{ok:true});
