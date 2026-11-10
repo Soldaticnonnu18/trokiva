@@ -316,7 +316,10 @@ const routed=async(req,res)=>{
       await client.query('ROLLBACK');return replyError(res,404,'Signalement déjà traité ou introuvable');
      }
      if(action==='hide'){
-      await client.query("UPDATE listings SET state='hidden',moderation_hidden_at=COALESCE(moderation_hidden_at,now()),updated_at=now() WHERE id=$1 AND state='published'",[q.rows[0].listing_id]);
+      const hidden=await client.query("UPDATE listings SET state='hidden',moderation_hidden_at=COALESCE(moderation_hidden_at,now()),updated_at=now() WHERE id=$1 AND state='published' RETURNING id",[q.rows[0].listing_id]);
+      if(!hidden.rowCount){
+       await client.query('ROLLBACK');return replyError(res,409,'Annonce déjà retirée ou devenue indisponible');
+      }
       await client.query("UPDATE listing_reports SET status='reviewed',reviewed_at=now() WHERE listing_id=$1 AND status='open'",[q.rows[0].listing_id]);
      }else await client.query("UPDATE listing_reports SET status='dismissed',reviewed_at=now() WHERE id=$1",[reportId]);
      await client.query('COMMIT');
