@@ -52,6 +52,14 @@ test('API sans secrets : aucun compte ni catalogue exposé',async()=>{
   assert.equal(publishWithoutDb.status,503);
   const hideWithoutDb=await fetch(base+'/api/my/listings/00000000-0000-4000-8000-000000000000/hide',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:'{}'});
   assert.equal(hideWithoutDb.status,503);
+  const offers=await fetch(base+'/api/my/offers');
+  assert.equal(offers.status,503);
+  const submitOffer=await fetch(base+'/api/my/offers',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({listingId:'00000000-0000-4000-8000-000000000000',message:'Un objet personnel disponible'})});
+  assert.equal(submitOffer.status,503);
+  const decide=await fetch(base+'/api/my/offers/00000000-0000-4000-8000-000000000000/accept',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:'{}'});
+  assert.equal(decide.status,503);
+  const health2=await(await fetch(base+'/api/health')).json();
+  assert.equal(health2.exchanges,'disabled');
   const verify=await fetch(base+'/verify.html');
   assert.equal(verify.status,200);
   const html=await verify.text();
