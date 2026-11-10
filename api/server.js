@@ -94,13 +94,15 @@ function validListing(p){
  if(!p||typeof p!=='object')return false;
  return typeof p.title==='string'&&p.title.trim().length>=3&&p.title.length<=100&&typeof p.category==='string'&&p.category.trim().length>0&&p.category.length<=80&&typeof (p.description??'')==='string'&&(p.description??'').length<=1200&&typeof (p.wanted??'')==='string'&&(p.wanted??'').length<=100&&typeof (p.city??'')==='string'&&(p.city??'').length<=100
 }
-const requiredTables=['users','sessions','email_verifications','password_resets','listings','exchange_offers','listing_reports','exchange_messages'];
+const requiredTables=['users','sessions','email_verifications','password_resets','listings','exchange_offers','listing_reports','exchange_messages','exchange_confirmations'];
 const requiredColumns=[
  ['listings','moderation_hidden_at'],
  ['users','email_verified_at'],
  ['exchange_offers','recipient_id'],
  ['exchange_messages','offer_id'],
  ['exchange_messages','sender_id'],
+ ['exchange_confirmations','offer_id'],
+ ['exchange_confirmations','user_id'],
  ['listing_reports','reviewed_at']
 ];
 async function checkSchemaReady(){
@@ -333,7 +335,7 @@ const routed=async(req,res)=>{
    if(!exchangesEnabled)return replyError(res,503,'Messagerie des échanges non activée');
    if(!(await requireReady(res)))return;
   }
-  if(p==='/api/my/offers' || /^\/api\/my\/offers\/[a-f0-9-]{36}\/(accept|decline|cancel)$/.test(p)){
+  if(p==='/api/my/offers' || /^\/api\/my\/offers\/[a-f0-9-]{36}\/(accept|decline|cancel|confirm)$/.test(p)){
    if(!exchangesEnabled)return replyError(res,503,'Échanges non encore activés : contrôles de sécurité en cours');
    if(!(await requireReady(res)))return;
   }
@@ -341,7 +343,7 @@ const routed=async(req,res)=>{
    const u=await userFromRequest(req);
    if(!u)return replyError(res,401,'Connexion nécessaire');
    const data=await pool.query(
-    "SELECT e.id,e.listing_id,e.sender_id,e.recipient_id,e.message,e.status,e.created_at,e.updated_at,l.title AS listing_title,l.state AS listing_state FROM exchange_offers e JOIN listings l ON l.id=e.listing_id WHERE e.sender_id=$1 OR e.recipient_id=$1 ORDER BY e.created_at DESC LIMIT 100",
+    "SELECT e.id,e.listing_id,e.sender_id,e.recipient_id,e.message,e.status,e.created_at,e.updated_at,l.title AS listing_title,l.state AS listing_state,(SELECT COUNT(*)::integer FROM exchange_confirmations ec WHERE ec.offer_id=e.id) AS confirmation_count,EXISTS(SELECT 1 FROM exchange_confirmations mine WHERE mine.offer_id=e.id AND mine.user_id=$1) AS confirmed_by_me FROM exchange_offers e JOIN listings l ON l.id=e.listing_id WHERE e.sender_id=$1 OR e.recipient_id=$1 ORDER BY e.created_at DESC LIMIT 100",
     [u.id]
    );
    return json(res,200,{items:data.rows});
@@ -364,6 +366,40 @@ const routed=async(req,res)=>{
     if(e.code==='23505')return replyError(res,409,'Une proposition en attente existe déjà pour cette annonce');
     throw e;
    }
+  }
+  const confirmRoute=p.match(/^\/api\/my\/offers\/([a-f0-9-]{36})\/confirm$/);
+  if(confirmRoute && req.method==='POST'){
+   const u=await userFromRequest(req);
+   if(!u)return replyError(res,401,'Connexion nécessaire');
+   if(!rateLimit(req,'offer-confirm',12,60*60*1000))return replyError(res,429,'Trop de confirmations');
+   const offerId=confirmRoute[1];
+   const client=await pool.connect();
+   try{
+    await client.query('BEGIN');
+    const locked=await client.query(
+     "SELECT e.id,e.sender_id,e.recipient_id,e.status,l.state AS listing_state,l.moderation_hidden_at FROM exchange_offers e JOIN listings l ON l.id=e.listing_id JOIN users counterpart ON counterpart.id=CASE WHEN e.sender_id=$2 THEN e.recipient_id ELSE e.sender_id END WHERE e.id=$1 AND (e.sender_id=$2 OR e.recipient_id=$2) AND counterpart.disabled_at IS NULL AND counterpart.email_verified_at IS NOT NULL FOR UPDATE OF l,e",
+     [offerId,u.id]
+    );
+    const offer=locked.rows[0];
+    if(!offer || offer.status!=='accepted' || offer.moderation_hidden_at || !['reserved','exchanged'].includes(offer.listing_state)){
+     await client.query('ROLLBACK');return replyError(res,409,'Échange non confirmable');
+    }
+    if(offer.listing_state==='exchanged'){
+     await client.query('ROLLBACK');return json(res,200,{confirmed:true,completed:true,confirmationCount:2});
+    }
+    await client.query("INSERT INTO exchange_confirmations(offer_id,user_id) VALUES($1,$2) ON CONFLICT (offer_id,user_id) DO NOTHING",[offerId,u.id]);
+    const q=await client.query("SELECT COUNT(*)::integer AS total FROM exchange_confirmations WHERE offer_id=$1 AND user_id IN ($2,$3)",[offerId,offer.sender_id,offer.recipient_id]);
+    const count=q.rows[0].total;
+    if(count===2){
+     const result=await client.query(
+      "UPDATE listings SET state='exchanged',updated_at=now() WHERE id=(SELECT listing_id FROM exchange_offers WHERE id=$1) AND state='reserved' AND moderation_hidden_at IS NULL RETURNING id",
+      [offerId]
+     );
+     if(!result.rowCount){await client.query('ROLLBACK');return replyError(res,409,'Annonce indisponible pour finalisation')}
+    }
+    await client.query('COMMIT');
+    return json(res,200,{confirmed:true,completed:count===2,confirmationCount:count});
+   }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}finally{client.release()}
   }
   const messageRoute=p.match(/^\/api\/my\/offers\/([a-f0-9-]{36})\/messages$/);
   if(messageRoute && (req.method==='GET'||req.method==='POST')){
