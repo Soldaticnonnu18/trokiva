@@ -14,8 +14,8 @@ if (!process.env.DATABASE_URL) {
     await client.query('SELECT pg_advisory_lock(490017, 1)');
     try {
       await client.query(sql);
-      const result=await client.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename IN ('users','email_verifications','sessions','listings') ORDER BY tablename");
-      if(result.rowCount!==4)throw new Error('Migration incomplète');
+      const result=await client.query("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename IN ('users','email_verifications','password_resets','sessions','listings') ORDER BY tablename");
+      if(result.rowCount!==5)throw new Error('Migration incomplète');
       console.log('Schéma TROKIVA vérifié :',result.rows.map(x=>x.tablename).join(', '));
     } finally {
       await client.query('SELECT pg_advisory_unlock(490017, 1)');
