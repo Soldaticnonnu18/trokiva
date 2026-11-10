@@ -180,3 +180,10 @@ Date : 10 novembre 2026.
 - Les modifications de brouillons respectent également le verrou.
 - Test de non-régression ajouté dans `api/test/security.test.js`.
 - **Migration de cette colonne non exécutée** tant que la base Render n'est pas connectée ; la fonctionnalité ne doit pas être annoncée comme validée avec PostgreSQL réel.
+
+## Vérification effective du correctif de modération
+- Une première compilation Render `dep-dbpj3ko8v5cc73edhad0` a été rejetée par le test de non-régression (mauvais ordre dans une expression d'assertion), empêchant le code de passer sans contrôle.
+- L'assertion a été alignée sur la requête SQL réellement utilisée, sans modifier la logique de retrait.
+- Nouvelle compilation et déploiement `dep-dbpj42brjlhs7382jgp0` : **live** sur le commit `5be83143`.
+- Journaux de tests Render : **10 tests PASS sur 10, aucun échec**.
+- Validation SQL en base réelle toujours en attente du raccordement PostgreSQL ; ne pas annoncer cette protection comme éprouvée de bout en bout.
