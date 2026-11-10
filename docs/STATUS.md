@@ -35,3 +35,15 @@ Date : 10 novembre 2026.
 - Aucun autre dépôt GitHub ni service MINBA ne doit être modifié.
 - Ne pas considérer un service `live` comme un système de comptes fonctionnel.
 - Dépôt GitHub observé en mode PUBLIC : demander une vérification de confidentialité dans les paramètres.
+
+
+## Chantier suivant — inscription vérifiée (10/11/2026)
+- Code d'inscription avec hachage scrypt + sel, vérification du format e-mail et limitation des demandes ajouté à `api/server.js`.
+- Lien de vérification à usage unique, empreinte SHA-256 stockée en base et expiration de 24 heures ; page `verify.html`.
+- Envoi prévu via Resend, avec secrets `RESEND_API_KEY` et `RESEND_FROM_EMAIL` configurables uniquement dans Render.
+- Le serveur ne permet l'inscription que si `ENABLE_REGISTRATION=true`, `DATABASE_URL`, l'envoi Resend et `PUBLIC_API_BASE_URL` sont tous configurés.
+- Commande `npm run migrate` préparée : nécessite `DATABASE_URL`. Migration SQL **non exécutée** : connecteur Render PostgreSQL en lecture seule et IP autorisées absentes.
+- Le déploiement API `dep-dbpf57s9v7es73bntm40` a été confirmé `live`, mais cela ne valide pas un parcours d'inscription réel.
+- Smoke test serveur ajouté au dépôt ; son exécution réussie n'est pas encore attestée.
+- L'API et la PWA étant sur deux sous-domaines distincts de Render, prévoir un point d'entrée same-origin pour les cookies HttpOnly avant d'activer les comptes.
+- Aucun compte utilisateur ni mail de vérification envoyé pendant ce chantier.
