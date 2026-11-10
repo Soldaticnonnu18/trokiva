@@ -274,7 +274,7 @@ const routed=async(req,res)=>{
    try{
     await client.query('BEGIN');
     const lock=await client.query(
-     "SELECT e.id,e.listing_id,e.sender_id,e.recipient_id,e.status,l.state AS listing_state,l.owner_id FROM exchange_offers e JOIN listings l ON l.id=e.listing_id WHERE e.id=$1 AND (e.sender_id=$2 OR e.recipient_id=$2) FOR UPDATE OF l,e",
+     "SELECT e.id,e.listing_id,e.sender_id,e.recipient_id,e.status,l.state AS listing_state,l.owner_id FROM exchange_offers e JOIN listings l ON l.id=e.listing_id JOIN users sender ON sender.id=e.sender_id WHERE e.id=$1 AND (e.sender_id=$2 OR e.recipient_id=$2) AND sender.disabled_at IS NULL AND sender.email_verified_at IS NOT NULL FOR UPDATE OF l,e",
      [offerId,u.id]
     );
     const offer=lock.rows[0];
