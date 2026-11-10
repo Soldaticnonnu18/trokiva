@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS listings (
  created_at timestamptz NOT NULL DEFAULT now(),
  updated_at timestamptz NOT NULL DEFAULT now()
 );
+-- Permanent moderation lock: owner cannot republish a removed listing.
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderation_hidden_at timestamptz;
 CREATE INDEX IF NOT EXISTS listings_public_idx ON listings (created_at DESC) WHERE state='published';
 CREATE INDEX IF NOT EXISTS listings_owner_idx ON listings(owner_id,created_at DESC);
 CREATE TABLE IF NOT EXISTS exchange_offers (
