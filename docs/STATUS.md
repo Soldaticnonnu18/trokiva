@@ -370,3 +370,12 @@ Date : 10 novembre 2026.
 - Test smoke ajouté : contrôles HTTP 200, type `image/png`, signature PNG et dimensions exactes 180 × 180, et référence HTML.
 - Commit GitHub du lot : `ac0522c6`. Render statique : `dep-dbpkonon74is738olpt0` **live**. API : `dep-dbpkooh5efls73dghlvg` déclenché (état à suivre). La vérification d'affichage effective sur l'écran d'accueil iPhone nécessite de rafraîchir le raccourci (iOS peut garder l'ancienne icône en cache).
 - Ne pas confondre une icône PWA 180 × 180 plus adaptée avec un fichier vectoriel original : le logo source de 285 × 228 pixels limite intrinsèquement la résolution maximum.
+
+
+## 10/11/2026 — Refonte de cadrage mobile et desktop de TROKIVA
+- Demande : interface jugée trop « site vitrine » ; sections et fenêtres mal cadrées, présentation de la PWA insuffisamment applicative.
+- `index.html` : nouvelle couche finale `trokiva-app-shell-v1` harmonisant largeur des écrans, cadres et grilles de cartes, rayons de coins, hauteur des boutons, typographie plus compacte, marges régulières, panneau de brouillons, écrans Explorer/Publier/Messages/Profil et navigation inférieure flottante en zone sûre iOS. Le logo original et toutes les fonctions des brouillons locaux sont préservés.
+- `compte.html` : `trokiva-member-app-shell-v1` pour les formulaires, onglets, listes d'annonces, messagerie et modération, avec grilles adaptatives et actions reflow sans débordements attendus. Fonctionnalités et requêtes API inchangées.
+- Service Worker `sw.js` : cache mis à jour de `v7` à `v8`. Tests smoke renforcés pour la présence des couches UI et les contraintes mobiles.
+- Aucune annonce ou conversation fictive injectée, aucune modification du schéma PostgreSQL ou des réglages de sécurité.
+- Vérifier le rendu sur véritable iPhone, petits écrans Android et bureau après déploiement ; les tests statiques ne démontrent pas à eux seuls l'absence de tous problèmes visuels.
