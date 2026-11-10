@@ -200,7 +200,15 @@ const routed=async(req,res)=>{
    const q=await pool.query('SELECT id FROM users WHERE email=$1 AND email_verified_at IS NULL AND disabled_at IS NULL',[email]);
    if(!q.rowCount)return json(res,202,generic);
    const token=createSecret();
-   await pool.query("INSERT INTO email_verifications(id,user_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '24 hours')",[randomUUID(),q.rows[0].id,hash(token)]);
+   const client=await pool.connect();
+   try{
+    await client.query('BEGIN');
+    const account=await client.query('SELECT id FROM users WHERE id=$1 AND email_verified_at IS NULL AND disabled_at IS NULL FOR UPDATE',[q.rows[0].id]);
+    if(!account.rowCount){await client.query('ROLLBACK');return json(res,202,generic)}
+    await client.query('UPDATE email_verifications SET consumed_at=now() WHERE user_id=$1 AND consumed_at IS NULL',[q.rows[0].id]);
+    await client.query("INSERT INTO email_verifications(id,user_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '24 hours')",[randomUUID(),q.rows[0].id,hash(token)]);
+    await client.query('COMMIT');
+   }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}finally{client.release()}
    try {await sendVerification(email,token)}catch(e){console.error('Email resend failed',e.name||'SendError');return replyError(res,503,'Service de messagerie temporairement indisponible')}
    return json(res,202,generic);
   }
@@ -214,6 +222,7 @@ const routed=async(req,res)=>{
     const q=await client.query('UPDATE email_verifications SET consumed_at=now() WHERE token_hash=$1 AND consumed_at IS NULL AND expires_at>now() RETURNING user_id',[hash(input.token)]);
     if(!q.rowCount){await client.query('ROLLBACK');return replyError(res,400,'Lien expiré ou déjà utilisé')}
     await client.query('UPDATE users SET email_verified_at=COALESCE(email_verified_at,now()) WHERE id=$1',[q.rows[0].user_id]);
+    await client.query('UPDATE email_verifications SET consumed_at=now() WHERE user_id=$1 AND consumed_at IS NULL',[q.rows[0].user_id]);
     await client.query('COMMIT');
     return json(res,200,{ok:true});
    }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}finally{client.release()}
