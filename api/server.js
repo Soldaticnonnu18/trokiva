@@ -75,7 +75,16 @@ async function userFromRequest(req){
  const result=await pool.query('SELECT u.id,u.email FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND s.revoked_at IS NULL AND u.disabled_at IS NULL AND u.email_verified_at IS NOT NULL',[hash(token)]);
  return result.rows[0]||null;
 }
-function csrfOk(req){const host=req.headers.host;const reqOrigin=req.headers.origin;if(reqOrigin){try{return new URL(reqOrigin).host===host}catch{return false}}const site=req.headers['sec-fetch-site'];return site==='same-origin'||site==='none'}
+function csrfOk(req){
+ const site=req.headers['sec-fetch-site'];
+ if(site==='cross-site'||site==='same-site')return false;
+ const host=req.headers.host;
+ const reqOrigin=req.headers.origin;
+ if(reqOrigin){
+  try{const parsed=new URL(reqOrigin);return parsed.host===host&&(parsed.protocol==='https:'||(parsed.protocol==='http:'&&/^(localhost|127\\.0\\.0\\.1)(:\\d+)?$/.test(host||'')))}catch{return false}
+ }
+ return site==='same-origin';
+}
 async function serve(res,name){
  const types={'compte.html':'text/html; charset=utf-8','index.html':'text/html; charset=utf-8','manifest.webmanifest':'application/manifest+json','icon.svg':'image/svg+xml','sw.js':'text/javascript; charset=utf-8','verify.html':'text/html; charset=utf-8','reset-password.html':'text/html; charset=utf-8','assets/trokiva-symbol.svg':'image/svg+xml'};
  const type=types[name];if(!type)return replyError(res,404,'Introuvable');
@@ -110,6 +119,7 @@ const routed=async(req,res)=>{
   if(!pool)return replyError(res,503,'Base de données non configurée');
   if(!['GET','HEAD','OPTIONS'].includes(req.method||'')){
    if(!csrfOk(req))return replyError(res,403,'Origine non autorisée');
+   if(!(req.headers['content-type']||'').toLowerCase().startsWith('application/json'))return replyError(res,415,'Contenu JSON requis');
    if(!rateLimit(req,'mutation',40,60_000))return replyError(res,429,'Trop de requêtes');
   }
   if(req.method==='POST'&&p==='/api/auth/register'){
