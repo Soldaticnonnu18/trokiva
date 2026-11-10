@@ -187,3 +187,11 @@ Date : 10 novembre 2026.
 - Nouvelle compilation et déploiement `dep-dbpj42brjlhs7382jgp0` : **live** sur le commit `5be83143`.
 - Journaux de tests Render : **10 tests PASS sur 10, aucun échec**.
 - Validation SQL en base réelle toujours en attente du raccordement PostgreSQL ; ne pas annoncer cette protection comme éprouvée de bout en bout.
+
+
+## Protection avant ouverture — cohérence de schéma et accès admin
+- `GET /api/ready` contrôle désormais **sept tables** et les colonnes indispensables, notamment `listings.moderation_hidden_at`. La présence des tables seules ne suffit plus.
+- `POST /api/auth/register` et les routes de propositions de troc exigent un schéma conforme avant d'autoriser une écriture, même si un drapeau d'environnement était activé par erreur.
+- Accès privé modération via `TROKIVA_ADMIN_USER_ID` : l'UUID exact du compte vérifié est requis ; l'ancien contrôle par simple e-mail a été supprimé. Aucun identifiant administrateur par défaut n'est fourni.
+- Tests statiques de ces garanties ajoutés. La recette PostgreSQL complète reste impossible sans `DATABASE_URL` raccordée.
+- La documentation Render indique désormais sept tables et l'enregistrement privé de l'UUID admin après création du compte.
