@@ -79,3 +79,12 @@ Date : 10 novembre 2026.
 - Tests de sécurité hors base complétés pour la réinitialisation désactivée et la page HTML.
 - Cette fonctionnalité **n'est pas encore opérationnelle avec de véritables utilisateurs** : base non raccordée et domaine e-mail non configuré.
 - Le dépôt reste public, aucun secret n'y est enregistré.
+
+
+## Poursuite — migration contrôlée au démarrage
+- `api/migrate.js` exporte une fonction idempotente, exécutable manuellement, qui applique le schéma SQL des cinq tables et vérifie leur présence.
+- `api/server.js` déclenche cette fonction **uniquement** si `RUN_MIGRATIONS_ON_BOOT=true` et `DATABASE_URL` est configurée.
+- Sans configuration, aucune migration n'est déclenchée au démarrage. Si la migration est demandée et échoue, le serveur refuse de démarrer.
+- Test ajouté pour vérifier l'interdiction d'une migration sans URL PostgreSQL.
+- Procédure de configuration documentée dans `docs/RENDER_DATABASE_SETUP.md`.
+- **Limite non levée :** le connecteur actuel ne fournit pas l'URL interne de la base Render. L'initialisation effective des tables reste non exécutée ; aucune inscription publique n'est autorisée.
