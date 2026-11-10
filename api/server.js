@@ -81,7 +81,7 @@ function csrfOk(req){
  const host=req.headers.host;
  const reqOrigin=req.headers.origin;
  if(reqOrigin){
-  try{const parsed=new URL(reqOrigin);return parsed.host===host&&(parsed.protocol==='https:'||(parsed.protocol==='http:'&&/^(localhost|127\\.0\\.0\\.1)(:\\d+)?$/.test(host||'')))}catch{return false}
+  try{const parsed=new URL(reqOrigin);return parsed.host===host&&(parsed.protocol==='https:'||(parsed.protocol==='http:'&&/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host||'')))}catch{return false}
  }
  return site==='same-origin';
 }
