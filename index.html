@@ -29,8 +29,20 @@ body{background:#fff}.wrap{max-width:1260px}.top{height:76px}.brand{font-size:24
 @media (max-width:380px){.preview-hero h1{font-size:28px}.hero-bike{min-height:110px}.hero-copy{padding-left:17px;padding-right:17px}}
 </style><style id="trokiva-draft-management">
 .draft-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:25px 0 13px}.draft-top h2{color:#124e46;margin:0}.count{font-size:.78em;color:#75877a}.draft-list{display:grid;gap:12px}.draft-card{display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:18px;border:1px solid #e0e9df;padding:16px 19px;background:#fff}.draft-card h3{margin:0 0 5px;color:#124e46;overflow-wrap:anywhere}.draft-card p{margin:0 0 5px;color:#65736a;font-size:13px}.draft-card small{color:#587563}.draft-actions,.form-actions,.draft-tools{display:flex;gap:10px;flex-wrap:wrap}.draft-actions .btn{padding:9px 13px;font-size:13px}.draft-tools{margin:19px 0}.upload-label{cursor:pointer;display:inline-flex;align-items:center}.small-empty{min-height:0;text-align:left;padding:23px;margin-top:23px}.panel .form-actions{align-items:center}.panel .form-actions .btn{padding:12px 14px}.panel{width:100%}@media(max-width:600px){.draft-card{align-items:stretch;flex-direction:column}.draft-actions .btn{flex:1}.draft-top .btn{font-size:13px;padding:12px 14px}.draft-top h2{font-size:22px}.panel{padding:19px}.draft-tools .btn{font-size:13px}}
+</style><style id="trokiva-mobile-history">
+.mobile-history{display:none}
+@media(max-width:760px){
+ .mobile-history{display:flex;align-items:center;gap:7px;margin-left:auto;flex-shrink:0}
+ .mobile-history button{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;border:1px solid #d6e2d0;font-size:25px;line-height:1;font-weight:700;color:#124e46;background:#fff;padding:0;touch-action:manipulation}
+ .mobile-history #nav-back{background:#c5ef85;border-color:#c5ef85}
+ .mobile-history button:disabled{opacity:.38;cursor:default}
+ .mobile-history button:not(:disabled):active{transform:scale(.97)}
+ .mobile-history button:focus-visible{outline:3px solid #124e46;outline-offset:2px}
+ .top .brand{min-width:0;white-space:nowrap}
+}
+@media(max-width:360px){.mobile-history button{width:38px;height:38px}.mobile-history{gap:5px}.top .brand{font-size:19px}}
 </style></head><body>
-<header><div class="wrap top"><a class="brand" href="#accueil"><img class="original-logo" src="/assets/trokiva-symbol.svg" alt="" />TROKIVA</a><nav class="nav" aria-label="Navigation principale"><button data-page="accueil">Accueil</button><button data-page="explorer">Explorer</button><button data-page="communautes">Communautés</button><button data-page="messages">Messages</button></nav><button class="profile" data-page="profil">Mon espace</button></div></header>
+<header><div class="wrap top"><a class="brand" href="#accueil"><img class="original-logo" src="/assets/trokiva-symbol.svg" alt="" />TROKIVA</a><div class="mobile-history" role="group" aria-label="Parcours des pages"><button id="nav-back" type="button" aria-label="Revenir à la page précédente" title="Retour" disabled><span aria-hidden="true">←</span></button><button id="nav-forward" type="button" aria-label="Aller à la page suivante" title="Suivant" disabled><span aria-hidden="true">→</span></button></div><nav class="nav" aria-label="Navigation principale"><button data-page="accueil">Accueil</button><button data-page="explorer">Explorer</button><button data-page="communautes">Communautés</button><button data-page="messages">Messages</button></nav><button class="profile" data-page="profil">Mon espace</button></div></header>
 <main>
 <section class="view" id="accueil">
 <div class="preview-hero">
@@ -80,7 +92,27 @@ function load(){
 }
 function persist(){localStorage.setItem(storageKey,JSON.stringify(drafts))}
 function resetForm(){activeDraft=null;fields.forEach(key=>$(key).value='');$('status').textContent='Nouveau brouillon prêt.'}
-function show(page){location.hash=page;nav()}
+// Navigation indexed per browser tab: back/forward never invents a page or exits TROKIVA.
+const historyMaxKey='trokiva-history-max-v1';
+const initialState=history.state;
+const initialIndex=Number.isSafeInteger(initialState?.trokivaIndex)&&initialState.trokivaIndex>=0?initialState.trokivaIndex:0;
+if(!Number.isSafeInteger(initialState?.trokivaIndex))history.replaceState({...initialState,trokivaIndex:initialIndex},'',location.href);
+let historyIndex=initialIndex;
+let historyMax=Math.max(historyIndex,Number(sessionStorage.getItem(historyMaxKey))||0);
+function updateHistoryButtons(){
+ $('nav-back').disabled=historyIndex===0;
+ $('nav-forward').disabled=historyIndex>=historyMax;
+}
+function show(page){
+ if(!pages.includes(page))return;
+ const current=pages.includes(location.hash.slice(1))?location.hash.slice(1):'accueil';
+ if(page===current){nav();return}
+ historyIndex+=1;
+ historyMax=historyIndex;
+ sessionStorage.setItem(historyMaxKey,String(historyMax));
+ history.pushState({trokivaIndex:historyIndex},'',location.pathname+location.search+'#'+page);
+ nav();
+}
 function nav(){
  const hash=location.hash.slice(1);
  const page=pages.includes(hash)?hash:'accueil';
@@ -88,8 +120,16 @@ function nav(){
  document.title='TROKIVA — '+page.charAt(0).toUpperCase()+page.slice(1);
  document.querySelectorAll('[data-page]').forEach(b=>{if(b.tagName==='BUTTON')b.setAttribute('aria-current',b.dataset.page===page?'page':'false')});
  if(page==='profil')renderDrafts();
+ updateHistoryButtons();
  window.scrollTo(0,0);
 }
+$('nav-back').addEventListener('click',()=>{if(historyIndex>0)history.back()});
+$('nav-forward').addEventListener('click',()=>{if(historyIndex<historyMax)history.forward()});
+addEventListener('popstate',event=>{
+ if(Number.isSafeInteger(event.state?.trokivaIndex)&&event.state.trokivaIndex>=0)historyIndex=event.state.trokivaIndex;
+ else historyIndex=0;
+ nav();
+});
 document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click',()=>{if(el.dataset.page==='publier' && location.hash!=='#publier')resetForm();show(el.dataset.page)}));
 function renderDrafts(){
  const host=$('draft-list');host.replaceChildren();
@@ -140,6 +180,6 @@ $('import-drafts').addEventListener('change',async event=>{
   localStorage.setItem(storageKey,JSON.stringify(merged));drafts=merged;renderDrafts();alert('Import terminé : '+merged.length+' brouillons présents.');
  }catch(e){alert('Import impossible : '+e.message)}finally{event.target.value=''}
 });
-load();addEventListener('hashchange',nav);nav();
+load();addEventListener('hashchange',()=>{const state=history.state;if(!Number.isSafeInteger(state?.trokivaIndex)){historyIndex+=1;historyMax=historyIndex;history.replaceState({...state,trokivaIndex:historyIndex},'',location.href);sessionStorage.setItem(historyMaxKey,String(historyMax))}nav()});nav();
 })();
 </script><script>if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}))}</script></body></html>
