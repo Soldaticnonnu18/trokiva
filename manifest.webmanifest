@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "TROKIVA — Échangeons autrement",
+  "short_name": "TROKIVA",
+  "description": "Troc et échange d'objets entre voisins, étudiants et amis.",
+  "lang": "fr",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8f7f2",
+  "theme_color": "#124e46",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
