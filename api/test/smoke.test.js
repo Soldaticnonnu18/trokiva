@@ -60,6 +60,10 @@ test('API sans secrets : aucun compte ni catalogue exposé',async()=>{
   assert.equal(decide.status,503);
   const health2=await(await fetch(base+'/api/health')).json();
   assert.equal(health2.exchanges,'disabled');
+  const report=await fetch(base+'/api/reports',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({listingId:'00000000-0000-4000-8000-000000000000',reason:'fraud',details:'Annonce trompeuse'})});
+  assert.equal(report.status,503);
+  const queue=await fetch(base+'/api/admin/reports');
+  assert.equal(queue.status,503);
   const verify=await fetch(base+'/verify.html');
   assert.equal(verify.status,200);
   const html=await verify.text();
