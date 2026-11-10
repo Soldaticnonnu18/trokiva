@@ -99,3 +99,12 @@ test('All database API routes refuse incomplete migrations before reading or wri
  assert.match(server,/if\(req\.method==='GET'&&p==='\/api\/listings'\)[\s\S]*?if\(!\(await requireReady\(res\)\)\)return;/);
  assert.match(server,/if\(req\.method==='GET'&&p==='\/api\/me'\)[\s\S]*?if\(!\(await requireReady\(res\)\)\)return;/);
 });
+
+test('Startup reports actual PostgreSQL readiness separately from migration completion',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+ assert.match(server,/if\(pool\)\{[\s\S]*?const verified=await checkSchemaReady\(\)/);
+ assert.match(server,/TROKIVA database schema readiness:/);
+ assert.match(server,/verified\?'ready':'incomplete'/);
+ assert.match(server,/database schema readiness: unavailable/);
+});
