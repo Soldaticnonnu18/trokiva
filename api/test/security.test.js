@@ -108,3 +108,11 @@ test('Startup reports actual PostgreSQL readiness separately from migration comp
  assert.match(server,/verified\?'ready':'incomplete'/);
  assert.match(server,/database schema readiness: unavailable/);
 });
+
+test('Private conversation read rejects outsiders while allowing zero messages',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+ assert.match(server,/LEFT JOIN exchange_messages m ON m\.offer_id=e\.id/);
+ assert.match(server,/if\(!results\.rowCount\)return replyError\(res,404,'Conversation introuvable'\)/);
+ assert.match(server,/results\.rows\.filter\(row=>row\.id!==null\)/);
+});
