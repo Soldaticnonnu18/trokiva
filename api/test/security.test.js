@@ -116,3 +116,11 @@ test('Private conversation read rejects outsiders while allowing zero messages',
  assert.match(server,/if\(!results\.rowCount\)return replyError\(res,404,'Conversation introuvable'\)/);
  assert.match(server,/results\.rows\.filter\(row=>row\.id!==null\)/);
 });
+
+test('Email verification serializes account access and consumes superseded tokens',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+ assert.match(server,/SELECT id FROM users WHERE id=\$1 AND email_verified_at IS NULL AND disabled_at IS NULL FOR UPDATE/);
+ assert.match(server,/UPDATE email_verifications SET consumed_at=now\(\) WHERE user_id=\$1 AND consumed_at IS NULL/);
+ assert.match(server,/UPDATE email_verifications SET consumed_at=now\(\) WHERE token_hash=\$1 AND user_id=\$2 AND consumed_at IS NULL AND expires_at>now\(\)/);
+});
