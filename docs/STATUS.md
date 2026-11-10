@@ -294,3 +294,14 @@ Date : 10 novembre 2026.
 - Nouvelle garde `RUN_MIGRATIONS_ON_BOOT=true` : l'API refuse de démarrer si `ENABLE_REGISTRATION=true` **ou** `ENABLE_EXCHANGES=true`, empêchant une migration accompagnée d'ouverture publique prématurée.
 - Tests complémentaires ajoutés à `api/test/smoke.test.js` pour les deux combinaisons dangereuses.
 - Aucun secret copié, aucune base recréée, migration de production non exécutée ; `DATABASE_URL` doit être saisie dans Render privé.
+
+
+## 10/11/2026 — PostgreSQL Render réellement raccordée et migration initiale réussie
+- L'utilisateur a renseigné lui-même `DATABASE_URL` sur le service privé Render, sans partager le secret.
+- Première tentative de migration `dep-dbpk6ktbedkc738vrn40` : `build_failed`, car le serveur de smoke-test héritait de `RUN_MIGRATIONS_ON_BOOT=true`. Aucune migration de ce déploiement n'a été confirmée.
+- Correction ciblée de `api/test/smoke.test.js` commit `4d981843` : le serveur d'essai impose `RUN_MIGRATIONS_ON_BOOT=false`, sans modifier les réglages du service de production.
+- Seconde tentative `dep-dbpk6vm1egvs73cbdcng` : déploiement **live** avec journal serveur **`TROKIVA schema migration verified: 9 tables`**. La connexion privée PostgreSQL fonctionne donc au moins lors de cette migration.
+- Après migration, variables Render remises explicitement à **`RUN_MIGRATIONS_ON_BOOT=false`**, `ENABLE_REGISTRATION=false`, `ENABLE_EXCHANGES=false`.
+- Déploiement final `dep-dbpk7avf3r2c738co1b0` : **live** (commit `4d981843`), tests de build **17 pass, 0 fail, 1 skipped** (intégration PostgreSQL jetable réservée à GitHub Actions).
+- Les endpoints publics `/api/health` et `/api/ready` n'ont pas pu être ouverts depuis le navigateur de contrôle : le `ready:true` en production reste à confirmer malgré le succès du journal de migration.
+- **Ne pas activer les comptes ni les échanges** avant la validation e-mail TROKIVA, le statut `ready:true`, la recette entre membres, les protections contre abus et la politique de conservation des données. Base gratuite expire le 10/12/2026.
