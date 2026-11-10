@@ -30,6 +30,19 @@ async function sendVerification(email,token) {
  if(!response.ok)throw new Error('Envoi e-mail impossible');
 }
 
+async function sendPasswordReset(email,token) {
+ const link=(publicUrl.endsWith('/')?publicUrl.slice(0,-1):publicUrl)+'/reset-password.html#token='+token;
+ const response=await fetch('https://api.resend.com/emails',{
+  method:'POST',
+  headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json'},
+  body:JSON.stringify({
+    from:process.env.RESEND_FROM_EMAIL,to:[email],subject:'Réinitialiser votre mot de passe TROKIVA',
+    html:'<p>Une demande de réinitialisation du mot de passe TROKIVA a été effectuée.</p><p><a href="'+link+'">Choisir un nouveau mot de passe</a></p><p>Le lien est à usage unique et expire dans une heure. Si vous n’êtes pas à l’origine de cette demande, ignorez ce message.</p>'
+  }),signal:AbortSignal.timeout(10000)
+ });
+ if(!response.ok)throw new Error('Envoi e-mail impossible');
+}
+
 const json=(res,status,body,extra={})=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...extra});res.end(JSON.stringify(body))};
 const replyError=(res,status,message)=>json(res,status,{error:message});
 const allowedMethods='GET, POST, PATCH, DELETE, OPTIONS';
@@ -63,7 +76,7 @@ async function userFromRequest(req){
 }
 function csrfOk(req){const host=req.headers.host;const reqOrigin=req.headers.origin;if(reqOrigin){try{return new URL(reqOrigin).host===host}catch{return false}}const site=req.headers['sec-fetch-site'];return site==='same-origin'||site==='none'}
 async function serve(res,name){
- const types={'index.html':'text/html; charset=utf-8','manifest.webmanifest':'application/manifest+json','icon.svg':'image/svg+xml','sw.js':'text/javascript; charset=utf-8','verify.html':'text/html; charset=utf-8'};
+ const types={'index.html':'text/html; charset=utf-8','manifest.webmanifest':'application/manifest+json','icon.svg':'image/svg+xml','sw.js':'text/javascript; charset=utf-8','verify.html':'text/html; charset=utf-8','reset-password.html':'text/html; charset=utf-8'};
  const type=types[name];if(!type)return replyError(res,404,'Introuvable');
  try{const content=await fs.readFile(path.join(base,name));res.writeHead(200,{'content-type':type,'cache-control':name==='sw.js'?'no-cache':'public, max-age=120'});res.end(content)}catch{replyError(res,404,'Introuvable')}
 }
@@ -158,6 +171,45 @@ const routed=async(req,res)=>{
     return json(res,200,{ok:true});
    }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}finally{client.release()}
   }
+  if(req.method==='POST'&&p==='/api/auth/request-password-reset'){
+   if(!emailReady || !pool)return replyError(res,503,'Réinitialisation indisponible');
+   if(!rateLimit(req,'reset-request',3,60*60*1000))return replyError(res,429,'Trop de demandes');
+   const input=await body(req);
+   const email=typeof input.email==='string'?input.email.trim().toLowerCase():'';
+   if(!validEmail(email))return replyError(res,400,'Adresse e-mail invalide');
+   const generic={message:'Si ce compte existe et est actif, un e-mail sera envoyé.'};
+   const q=await pool.query('SELECT id FROM users WHERE email=$1 AND email_verified_at IS NOT NULL AND disabled_at IS NULL',[email]);
+   if(!q.rowCount)return json(res,202,generic);
+   const token=createSecret();
+   await pool.query("INSERT INTO password_resets(id,user_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[randomUUID(),q.rows[0].id,hash(token)]);
+   try{await sendPasswordReset(email,token)}catch(e){
+    console.error('Password reset email failure',e.name||'SendError');
+    return replyError(res,503,'Service de messagerie temporairement indisponible');
+   }
+   return json(res,202,generic);
+  }
+  if(req.method==='POST'&&p==='/api/auth/reset-password'){
+   if(!pool)return replyError(res,503,'Réinitialisation indisponible');
+   if(!rateLimit(req,'reset-confirm',10,60*60*1000))return replyError(res,429,'Trop de demandes');
+   const input=await body(req);
+   const token=typeof input.token==='string'?input.token:'';
+   const password=typeof input.password==='string'?input.password:'';
+   if(!/^[a-f0-9]{64}$/.test(token)||password.length<12||password.length>128)
+    return replyError(res,400,'Lien invalide ou mot de passe trop court (12 caractères minimum)');
+   const salt=randomBytes(16).toString('hex');
+   const digest=(await scrypt(password,salt,64)).toString('hex');
+   const client=await pool.connect();
+   try{
+    await client.query('BEGIN');
+    const q=await client.query('UPDATE password_resets SET consumed_at=now() WHERE token_hash=$1 AND consumed_at IS NULL AND expires_at>now() RETURNING user_id',[hash(token)]);
+    if(!q.rowCount){await client.query('ROLLBACK');return replyError(res,400,'Lien expiré ou déjà utilisé')}
+    await client.query('UPDATE users SET password_hash=$2,password_salt=$3 WHERE id=$1 AND disabled_at IS NULL',[q.rows[0].user_id,digest,salt]);
+    await client.query('UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL',[q.rows[0].user_id]);
+    await client.query('UPDATE password_resets SET consumed_at=now() WHERE user_id=$1 AND consumed_at IS NULL',[q.rows[0].user_id]);
+    await client.query('COMMIT');
+    return json(res,200,{ok:true,message:'Mot de passe modifié. Reconnectez-vous.'});
+   }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}finally{client.release()}
+  }
   if(req.method==='POST'&&p==='/api/auth/login'){
    if(!rateLimit(req,'login',5,15*60_000))return replyError(res,429,'Trop de tentatives de connexion');
    const input=await body(req);
@@ -212,7 +264,7 @@ const routed=async(req,res)=>{
   return replyError(res,404,'Route API introuvable');
  }
  if(req.method!=='GET'&&req.method!=='HEAD')return replyError(res,405,'Méthode non autorisée');
- const pages={'/':'index.html','/index.html':'index.html','/manifest.webmanifest':'manifest.webmanifest','/icon.svg':'icon.svg','/sw.js':'sw.js','/verify.html':'verify.html'};
+ const pages={'/':'index.html','/index.html':'index.html','/manifest.webmanifest':'manifest.webmanifest','/icon.svg':'icon.svg','/sw.js':'sw.js','/verify.html':'verify.html','/reset-password.html':'reset-password.html'};
  const file=pages[p];return file?serve(res,file):replyError(res,404,'Introuvable');
 };
 const server=http.createServer((req,res)=>{routed(req,res).catch(err=>{console.error('Request error',err.code||err.name||'unknown');if(!res.headersSent)replyError(res,err.status||500,err.status?err.message:'Erreur serveur');else res.end()})});
