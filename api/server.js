@@ -75,7 +75,15 @@ const routed=async(req,res)=>{
  secureHeaders(res);
  const url=new URL(req.url||'/', 'http://localhost');
  const p=url.pathname;
- if(req.method==='GET'&&p==='/api/health')return json(res,200,{ok:true,service:'trokiva-api',database:!!pool,registration:registrationsEnabled?'enabled':'disabled'});
+ if(req.method==='GET'&&p==='/api/health')return json(res,200,{ok:true,service:'trokiva-api',databaseConfigured:!!pool,registration:registrationsEnabled?'enabled':'disabled'});
+ if(req.method==='GET'&&p==='/api/ready'){
+  if(!pool)return json(res,503,{ready:false,database:'unconfigured',schema:'not_checked'});
+  try{
+   const q=await pool.query("SELECT count(*)::integer AS total FROM information_schema.tables WHERE table_schema='public' AND table_name=ANY($1::text[])",[['users','sessions','email_verifications','listings']]);
+   const schemaReady=q.rows[0]?.total===4;
+   return json(res,schemaReady?200:503,{ready:schemaReady,database:'connected',schema:schemaReady?'ready':'incomplete'});
+  }catch(e){console.error('Readiness check failed',e.code||e.name);return json(res,503,{ready:false,database:'unavailable',schema:'not_checked'})}
+ }
  if(req.method==='GET'&&p==='/api/listings'){
   if(!pool)return json(res,503,{error:'Catalogue pas encore raccordé à la base de données'});
   const data=await pool.query("SELECT id,title,category,description,wanted,city,created_at FROM listings WHERE state='published' ORDER BY created_at DESC LIMIT 30");
