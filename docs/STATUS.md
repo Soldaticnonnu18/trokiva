@@ -361,3 +361,12 @@ Date : 10 novembre 2026.
 - **Render static `trokiva-preview`** : déploiement `dep-dbpkocifngtc73fnbokg` confirmé `live`.
 - **Render API `trokiva-api`** : déploiement `dep-dbpkohhsrm7s73anv5kg` confirmé `live`, tests de construction 21 pass, 0 fail, 1 test PostgreSQL volontairement skipped, schéma PostgreSQL toujours `ready`.
 - Limite : l'icône source 285×228 est matricielle. Une correction de taille, de fond et de référence peut améliorer le rendu iOS mais ne transforme pas cette source en vectoriel haute résolution ; rendu après suppression et réinstallation de l'icône iPhone à confirmer visuellement. Les deux applications Render sont déployées.
+
+
+## 10/11/2026 — Icône iOS PWA TROKIVA corrigée
+- Le raccourci iPhone montrait une icône floue ; diagnostic du dépôt : balise `apple-touch-icon` contenant le PNG original rectangulaire **285 × 228**, et `icon.svg` affichant ce même PNG intégré dans une toile carrée. Le logo source n'a pas été redessiné.
+- Nouvelle icône `apple-touch-icon.png` **carrée 180 × 180**, encodée en PNG RGBA à partir du fichier original référencé dans `assets/trokiva-symbol.svg`. Ajustement proportionnel sans déformation, fond blanc ; fichier original inchangé.
+- `index.html` utilise désormais `/apple-touch-icon.png?v=2` et non plus un PNG rectangulaire intégré ; `manifest.webmanifest` référence l'icône PNG carrée tout en conservant `/icon.svg` ; cache PWA `sw.js` passé à v7 ; l'API sert aussi `apple-touch-icon.png`.
+- Test smoke ajouté : contrôles HTTP 200, type `image/png`, signature PNG et dimensions exactes 180 × 180, et référence HTML.
+- Commit GitHub du lot : `ac0522c6`. Render statique : `dep-dbpkonon74is738olpt0` **live**. API : `dep-dbpkooh5efls73dghlvg` déclenché (état à suivre). La vérification d'affichage effective sur l'écran d'accueil iPhone nécessite de rafraîchir le raccourci (iOS peut garder l'ancienne icône en cache).
+- Ne pas confondre une icône PWA 180 × 180 plus adaptée avec un fichier vectoriel original : le logo source de 285 × 228 pixels limite intrinsèquement la résolution maximum.
