@@ -94,6 +94,33 @@ function validListing(p){
  if(!p||typeof p!=='object')return false;
  return typeof p.title==='string'&&p.title.trim().length>=3&&p.title.length<=100&&typeof p.category==='string'&&p.category.trim().length>0&&p.category.length<=80&&typeof (p.description??'')==='string'&&(p.description??'').length<=1200&&typeof (p.wanted??'')==='string'&&(p.wanted??'').length<=100&&typeof (p.city??'')==='string'&&(p.city??'').length<=100
 }
+const requiredTables=['users','sessions','email_verifications','password_resets','listings','exchange_offers','listing_reports'];
+const requiredColumns=[
+ ['listings','moderation_hidden_at'],
+ ['users','email_verified_at'],
+ ['exchange_offers','recipient_id'],
+ ['listing_reports','reviewed_at']
+];
+async function checkSchemaReady(){
+ if(!pool)return false;
+ const tables=await pool.query(
+  "SELECT count(*)::integer AS total FROM information_schema.tables WHERE table_schema='public' AND table_name=ANY($1::text[])",[requiredTables]
+ );
+ if(tables.rows[0]?.total!==requiredTables.length)return false;
+ const columns=await pool.query(
+  "SELECT table_name,column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=ANY($1::text[])",
+  [requiredTables]
+ );
+ const names=new Set(columns.rows.map(row=>row.table_name+'.'+row.column_name));
+ return requiredColumns.every(([table,column])=>names.has(table+'.'+column));
+}
+async function requireReady(res){
+ try{
+  if(await checkSchemaReady())return true;
+ }catch(e){console.error('Schema gate unavailable',e.code||e.name)}
+ replyError(res,503,'Base ou schéma TROKIVA non prêt');
+ return false;
+}
 const routed=async(req,res)=>{
  secureHeaders(res);
  const url=new URL(req.url||'/', 'http://localhost');
@@ -102,8 +129,7 @@ const routed=async(req,res)=>{
  if(req.method==='GET'&&p==='/api/ready'){
   if(!pool)return json(res,503,{ready:false,database:'unconfigured',schema:'not_checked'});
   try{
-   const q=await pool.query("SELECT count(*)::integer AS total FROM information_schema.tables WHERE table_schema='public' AND table_name=ANY($1::text[])",[['users','sessions','email_verifications','password_resets','listings','exchange_offers','listing_reports']]);
-   const schemaReady=q.rows[0]?.total===7;
+   const schemaReady=await checkSchemaReady();
    return json(res,schemaReady?200:503,{ready:schemaReady,database:'connected',schema:schemaReady?'ready':'incomplete'});
   }catch(e){console.error('Readiness check failed',e.code||e.name);return json(res,503,{ready:false,database:'unavailable',schema:'not_checked'})}
  }
@@ -124,6 +150,7 @@ const routed=async(req,res)=>{
   }
   if(req.method==='POST'&&p==='/api/auth/register'){
    if(!registrationsEnabled)return replyError(res,503,'Inscriptions non activées : vérification e-mail manquante');
+   if(!await requireReady(res))return;
    if(!rateLimit(req,'signup',3,60*60*1000))return replyError(res,429,'Trop de demandes');
    const input=await body(req);
    const email=typeof input.email==='string'?input.email.trim().toLowerCase():'';
@@ -299,6 +326,7 @@ const routed=async(req,res)=>{
   }
   if(p==='/api/my/offers' || /^\/api\/my\/offers\/[a-f0-9-]{36}\/(accept|decline|cancel)$/.test(p)){
    if(!exchangesEnabled)return replyError(res,503,'Échanges non encore activés : contrôles de sécurité en cours');
+   if(!await requireReady(res))return;
   }
   if(req.method==='GET'&&p==='/api/my/offers'){
    const u=await userFromRequest(req);
