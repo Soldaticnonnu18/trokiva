@@ -287,3 +287,10 @@ Date : 10 novembre 2026.
 - Les secrets PostgreSQL ne sont pas exposés par le connecteur Render ; `DATABASE_URL` n'a pas été configurée. L'URL interne doit être saisie directement depuis le tableau de bord Render de la base dans l'environnement du service API, sans être transmise dans la conversation.
 - Render a déclenché le déploiement `dep-dbpjv9k9v7es73c3pi80` sur le commit `a66e0877`. Logs de construction : 17 tests réussis, 1 test d'intégration PostgreSQL explicitement ignoré dans Render. Dernier état consulté au moment de cette note : `update_in_progress`.
 - Étape suivante après saisie privée de l'URL : confirmer `databaseConfigured:true`, lancer migration contrôlée des neuf tables avec `RUN_MIGRATIONS_ON_BOOT=true`, vérifier `/api/ready`, puis remettre le drapeau à `false`. Ne pas activer les inscriptions ou les échanges avant vérification des e-mails et des transactions avec vrais comptes.
+
+
+## 10 novembre 2026 — préparation stricte de la première migration
+- Base Render existante `trokiva-db` confirmée `available` ; API dernière mise à jour 16:01 UTC. Aucun signe d'un nouveau déploiement lié à `DATABASE_URL` à l'heure du contrôle, et accès externe de diagnostic impossible depuis les outils. La présence réelle du secret doit être confirmée via `/api/health` par un accès interne au service.
+- Nouvelle garde `RUN_MIGRATIONS_ON_BOOT=true` : l'API refuse de démarrer si `ENABLE_REGISTRATION=true` **ou** `ENABLE_EXCHANGES=true`, empêchant une migration accompagnée d'ouverture publique prématurée.
+- Tests complémentaires ajoutés à `api/test/smoke.test.js` pour les deux combinaisons dangereuses.
+- Aucun secret copié, aucune base recréée, migration de production non exécutée ; `DATABASE_URL` doit être saisie dans Render privé.
