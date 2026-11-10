@@ -49,4 +49,19 @@ CREATE TABLE IF NOT EXISTS listings (
 );
 CREATE INDEX IF NOT EXISTS listings_public_idx ON listings (created_at DESC) WHERE state='published';
 CREATE INDEX IF NOT EXISTS listings_owner_idx ON listings(owner_id,created_at DESC);
+CREATE TABLE IF NOT EXISTS exchange_offers (
+ id uuid PRIMARY KEY,
+ listing_id uuid NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+ sender_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ recipient_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ message varchar(600) NOT NULL,
+ status text NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','accepted','declined','cancelled')),
+ created_at timestamptz NOT NULL DEFAULT now(),
+ updated_at timestamptz NOT NULL DEFAULT now(),
+ CONSTRAINT exchange_not_self CHECK(sender_id <> recipient_id),
+ CONSTRAINT exchange_message_not_blank CHECK(length(trim(message)) >= 10)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS exchange_one_pending_per_sender_listing ON exchange_offers(listing_id,sender_id) WHERE status='pending';
+CREATE INDEX IF NOT EXISTS exchange_offers_received_idx ON exchange_offers(recipient_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS exchange_offers_sent_idx ON exchange_offers(sender_id,created_at DESC);
 COMMIT;
