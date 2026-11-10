@@ -201,3 +201,11 @@ Date : 10 novembre 2026.
 - Déploiement `dep-dbpj90lg1s2s738ja3q0` confirmé `live` pour le commit `42af8310`.
 - Journaux de construction : **12 tests PASS, 0 échec**, incluant contrôle du schéma complet et restriction d'identité admin.
 - Les tests restent hors PostgreSQL réel ; absence de `DATABASE_URL` et de domaine e-mail TROKIVA validé.
+
+
+## 10/11/2026 — Intégrité des échanges et de la modération
+- Contrôle direct PostgreSQL via le connecteur Render impossible : la base `trokiva-db` n'autorise aucune IP externe, et le connecteur n'est pas sur le réseau privé Render. Ne pas ouvrir l'allowlist juste pour contourner ce blocage.
+- Nouvelle offre : `INSERT INTO exchange_offers ... SELECT ... FOR UPDATE OF l` sérialise la création par rapport aux réservations/acceptations concurrentes d'une annonce.
+- Modération : une action `hide` ne clôture plus les signalements si l'annonce n'a pas réellement été mise à l'état caché ; conflit HTTP 409 avec annulation de la transaction.
+- Tests de non-régression ajoutés aux contrôles automatiques.
+- Les chemins d'activation restent verrouillés : pas de comptes fictifs ni d'offres réelles avant connexion privée PostgreSQL, migration, vérification e-mail et recettes d'intégration.
