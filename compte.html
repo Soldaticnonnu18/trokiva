@@ -38,7 +38,7 @@ async function api(path,options={}){
 }
 function setTab(tab){for(const key of forms){el(key).hidden=key!==tab;const btn=document.querySelector('[data-tab="'+key+'"]');btn.setAttribute('aria-selected',String(key===tab))}}
 document.querySelectorAll('[data-tab]').forEach(btn=>btn.addEventListener('click',()=>{feedback('');setTab(btn.dataset.tab)}));
-function setIdentity(user){loggedIn=!!user;el('anonymous').hidden=loggedIn;el('member').hidden=!loggedIn;if(user)el('identity').textContent='Connecté : '+user.email}
+function setIdentity(user){loggedIn=!!user;el('anonymous').hidden=loggedIn;el('member').hidden=!loggedIn;if(user)el('identity').textContent='Connecté : '+user.email;else{el('exchange-conversation')?.remove();el('my-offers').replaceChildren();el('my-listings').replaceChildren();el('public-listings').replaceChildren()}}
 async function refresh(){
  try{const me=await api('/api/me');setIdentity(me.user);if(me.user){await Promise.all([loadListings(),loadPublicListings(),loadOffers()]);await loadModeration()}}catch(e){feedback(e.message);setIdentity(null)}
 }
