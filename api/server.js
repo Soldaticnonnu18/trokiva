@@ -150,7 +150,7 @@ const routed=async(req,res)=>{
   }
   if(req.method==='POST'&&p==='/api/auth/register'){
    if(!registrationsEnabled)return replyError(res,503,'Inscriptions non activées : vérification e-mail manquante');
-   if(!await requireReady(res))return;
+   if(!(await requireReady(res)))return;
    if(!rateLimit(req,'signup',3,60*60*1000))return replyError(res,429,'Trop de demandes');
    const input=await body(req);
    const email=typeof input.email==='string'?input.email.trim().toLowerCase():'';
@@ -326,7 +326,7 @@ const routed=async(req,res)=>{
   }
   if(p==='/api/my/offers' || /^\/api\/my\/offers\/[a-f0-9-]{36}\/(accept|decline|cancel)$/.test(p)){
    if(!exchangesEnabled)return replyError(res,503,'Échanges non encore activés : contrôles de sécurité en cours');
-   if(!await requireReady(res))return;
+   if(!(await requireReady(res)))return;
   }
   if(req.method==='GET'&&p==='/api/my/offers'){
    const u=await userFromRequest(req);
