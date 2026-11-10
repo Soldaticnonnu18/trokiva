@@ -139,3 +139,10 @@ Date : 10 novembre 2026.
 - Cache PWA incrémenté vers `trokiva-preview-v5`.
 - **Finitions différées selon demande** : tailles des textes, espaces, hauteur/arrondi des sections, homogénéisation mobile/ordinateur. Valider d'abord le fonctionnement réel de la navigation.
 - Les comptes, la connexion PostgreSQL, l'e-mail de vérification et les annonces publiques restent à valider séparément avant ouverture.
+
+
+## Confirmation de déploiement — flèches mobiles
+- PWA Render : `dep-dbpiqp3ncjis7391a1g0`, état `live`, commit `9393a416`.
+- API Render : `dep-dbpiqprm8hqs73e1psig`, état `live`, même commit.
+- Journaux Render : **5 tests réussis sur 5, 0 échec**, comprenant la syntaxe JavaScript PWA et la présence des fonctions de navigation.
+- La validation tactile iPhone sur appareil réel reste à réaliser ; ne pas déclarer ce contrôle fait sans retour utilisateur.
