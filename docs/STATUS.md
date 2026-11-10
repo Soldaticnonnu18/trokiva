@@ -344,3 +344,10 @@ Date : 10 novembre 2026.
 - Les sessions du compte et les jetons restants sont révoqués après réinitialisation réussie (comportement déjà existant, maintenu et couvert par davantage de tests).
 - Un test statique de non-régression et un scénario d'intégration PostgreSQL isolé vérifient liens périmés, mot de passe remplacé et session révoquée.
 - **Aucun test PostgreSQL réel sur Render et aucune ouverture des inscriptions/échanges** ; résultat de GitHub Actions toujours à établir séparément. Ne pas annoncer zéro bug : les parcours humains et l'envoi e-mail exigent une recette.
+
+
+## 10/11/2026 — Vérification production réinitialisation
+- API déployée sur Render, déploiement `dep-dbpkgk5g1s2s73dpcu20`, commit `ef82520e`, statut final **live**.
+- Construction : **21 tests réussis**, **0 échec**, **1 test PostgreSQL jetable ignoré** sur Render (22 au total).
+- Journal de démarrage : `TROKIVA database schema readiness: ready` et `TROKIVA API listening on port 10000`.
+- Les protections de rotation des jetons de réinitialisation sont intégrées ; test PostgreSQL de bout en bout et e-mails réels restent à confirmer avant ouverture.
