@@ -209,3 +209,12 @@ Date : 10 novembre 2026.
 - Modération : une action `hide` ne clôture plus les signalements si l'annonce n'a pas réellement été mise à l'état caché ; conflit HTTP 409 avec annulation de la transaction.
 - Tests de non-régression ajoutés aux contrôles automatiques.
 - Les chemins d'activation restent verrouillés : pas de comptes fictifs ni d'offres réelles avant connexion privée PostgreSQL, migration, vérification e-mail et recettes d'intégration.
+
+
+## 10/11/2026 — Messagerie privée liée aux échanges
+- Nouvelle huitième table `exchange_messages` avec `offer_id`, `sender_id`, `content` et horodatage, indexes de consultation. Le schéma est toujours idempotent, mais **non migré sur la base réelle** tant que `DATABASE_URL` reste manquante.
+- `GET/POST /api/my/offers/:id/messages` : accessible uniquement aux deux comptes vérifiés d'une proposition **acceptée**. Envoi seulement pour annonce toujours réservée et non retirée par modération ; limite de longueur et limite de débit côté API.
+- L'interface `compte.html` permet de consulter, actualiser et envoyer des messages entre les deux personnes concernées. Les messages sont retirés du DOM à la déconnexion.
+- Pas de comptes fictifs ni de conversation simulée ; le chat réel reste désactivé tant que `ENABLE_EXCHANGES` et le schéma ne sont pas validés.
+- Tests ajoutés pour contrôle des autorisations, schéma et fermeture fail-closed sans base. **Aucun test PostgreSQL end-to-end ni test humain encore réalisé.**
+- Pour un lancement sécurisé : prévoir gestion des signalements des messages, conservation/suppression et moyens de contact protégés.
