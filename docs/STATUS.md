@@ -256,3 +256,12 @@ Date : 10 novembre 2026.
 - API `dep-dbpjm19srm7s73av1qj0` confirmée `live` sur commit `5b70c030`.
 - Journaux de construction Render : **17 tests réussis sur 17, 0 échec**.
 - La réussite de ces tests ne prouve pas le raccordement PostgreSQL : `DATABASE_URL` reste à configurer, la migration à exécuter et les recettes de véritables échanges à effectuer.
+
+
+## 10/11/2026 — Recette PostgreSQL isolée par GitHub Actions
+- Nouveau workflow `.github/workflows/trokiva-postgres.yml` avec conteneur PostgreSQL 17 jetable sur GitHub Actions.
+- Nouveau test `api/test/postgres.integration.test.js` : applique la migration neuf tables dans la base **locale de CI**, ouvre un serveur API sur port local, crée seulement des comptes/objets temporaires d'essai dans cette base isolée et contrôle l'annonce, l'offre, l'autorisation, les messages et les deux confirmations. Aucun jeu de données de test n'est injecté en production.
+- L'exécution de ce test est verrouillée à `localhost` ou `127.0.0.1` avec nom de base strict `trokiva_test` ; pas d'URL distante possible.
+- Correction de l'expression régulière CSRF pour les requêtes HTTP locales de test, sans ouvrir les requêtes HTTP sur les domaines réels. Tests unitaires ajoutés.
+- **Résultat du workflow GitHub à confirmer** : le nombre de tests Render ne doit pas être présenté comme une preuve de transaction PostgreSQL tant que le job GitHub n'a pas réussi.
+- Raccordement `DATABASE_URL` au PostgreSQL privé Render, migrations en production et validation avec véritables membres toujours non effectués.
