@@ -68,6 +68,28 @@ test('PostgreSQL réel isolé : inscription vérifiée, annonce, offre, messages
    assert.ok(login.cookie);
    cookies.push(login.cookie);
   }
+  const resetTokenOld=randomBytes(32).toString('hex');
+  const resetTokenNew=randomBytes(32).toString('hex');
+  // Password reset: a single-use token revokes sessions and invalidates sibling tokens.
+  const resetUser={id:randomUUID(),email:'reset-test@example.invalid'};
+  const resetSalt=randomBytes(16).toString('hex');
+  const resetDigest=(await scrypt(password,resetSalt,64)).toString('hex');
+  await pool.query('INSERT INTO users(id,email,password_hash,password_salt,email_verified_at) VALUES($1,$2,$3,$4,now())',[resetUser.id,resetUser.email,resetDigest,resetSalt]);
+  const originalSession=await call('/api/auth/login','POST',{email:resetUser.email,password});
+  assert.equal(originalSession.response.status,200);
+  for(const value of ['older','newer']){
+   const token=value==='older'?resetTokenOld:resetTokenNew;
+   await pool.query("INSERT INTO password_resets(id,user_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[randomUUID(),resetUser.id,createHash('sha256').update(token).digest('hex')]);
+  }
+  const resetPass=randomBytes(24).toString('hex');
+  const resetResult=await call('/api/auth/reset-password','POST',{token:resetTokenNew,password:resetPass});
+  assert.equal(resetResult.response.status,200,JSON.stringify(resetResult.result));
+  assert.equal((await call('/api/auth/reset-password','POST',{token:resetTokenNew,password:resetPass})).response.status,400);
+  assert.equal((await call('/api/auth/reset-password','POST',{token:resetTokenOld,password:resetPass})).response.status,400);
+  const revoked=await call('/api/me','GET',undefined,originalSession.cookie);
+  assert.equal(revoked.result.user,null);
+  assert.equal((await call('/api/auth/login','POST',{email:resetUser.email,password})).response.status,401);
+  assert.equal((await call('/api/auth/login','POST',{email:resetUser.email,password:resetPass})).response.status,200);
   const create=await call('/api/my/listings','POST',{title:'Objet en bon état',category:'Divers',description:'Objet proposé pour un échange réel dans le banc de test isolé.',wanted:'Un autre objet',city:'Paris'},cookies[0]);
   assert.equal(create.response.status,201,JSON.stringify(create.result));
   const id=create.result.listing.id;
