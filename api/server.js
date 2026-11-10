@@ -530,6 +530,7 @@ const routed=async(req,res)=>{
 const server=http.createServer((req,res)=>{routed(req,res).catch(err=>{console.error('Request error',err.code||err.name||'unknown');if(!res.headersSent)replyError(res,err.status||500,err.status?err.message:'Erreur serveur');else res.end()})});
 if(process.env.RUN_SERVER!=='false') {
  if(process.env.RUN_MIGRATIONS_ON_BOOT==='true') {
+  if(process.env.ENABLE_REGISTRATION==='true'||process.env.ENABLE_EXCHANGES==='true')throw new Error('Migration refusée : fermer les inscriptions et les échanges avant migration');
   if(!dbUrl)throw new Error('Migration demandée mais DATABASE_URL absente');
   const {migrateDatabase}=await import('./migrate.js');
   const tables=await migrateDatabase(dbUrl);
