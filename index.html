@@ -98,7 +98,9 @@ const initialState=history.state;
 const initialIndex=Number.isSafeInteger(initialState?.trokivaIndex)&&initialState.trokivaIndex>=0?initialState.trokivaIndex:0;
 if(!Number.isSafeInteger(initialState?.trokivaIndex))history.replaceState({...initialState,trokivaIndex:initialIndex},'',location.href);
 let historyIndex=initialIndex;
-let historyMax=Math.max(historyIndex,Number(sessionStorage.getItem(historyMaxKey))||0);
+let historyMax=historyIndex;
+try{historyMax=Math.max(historyIndex,Number(sessionStorage.getItem(historyMaxKey))||0)}catch{}
+function saveHistoryMax(){try{sessionStorage.setItem(historyMaxKey,String(historyMax))}catch{}}
 function updateHistoryButtons(){
  $('nav-back').disabled=historyIndex===0;
  $('nav-forward').disabled=historyIndex>=historyMax;
@@ -109,7 +111,7 @@ function show(page){
  if(page===current){nav();return}
  historyIndex+=1;
  historyMax=historyIndex;
- sessionStorage.setItem(historyMaxKey,String(historyMax));
+ saveHistoryMax();
  history.pushState({trokivaIndex:historyIndex},'',location.pathname+location.search+'#'+page);
  nav();
 }
