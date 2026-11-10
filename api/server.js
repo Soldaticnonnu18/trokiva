@@ -17,10 +17,10 @@ const registrationsEnabled=process.env.ENABLE_REGISTRATION==='true' && emailRead
 const pool=dbUrl?new pg.Pool({connectionString:dbUrl,max:6,connectionTimeoutMillis:5000,ssl:process.env.DB_SSL==='true'?{rejectUnauthorized:true}:undefined}):null;
 const buckets=new Map();
 const hash=v=>createHash('sha256').update(v).digest('hex');
-const validEmail=v=>typeof v==='string' && v.length<=254 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v);
+const validEmail=v=>typeof v==='string' && v.length<=254 && v.includes('@') && /^[^ @]+@[^ @]+[.][^ @]+$/.test(v);
 const createSecret=()=>randomBytes(32).toString('hex');
 async function sendVerification(email,token) {
- const link=publicUrl.replace(/\\/$/,'')+'/verify.html#token='+token;
+ const link=(publicUrl.endsWith('/')?publicUrl.slice(0,-1):publicUrl)+'/verify.html#token='+token;
  const response=await fetch('https://api.resend.com/emails',{
   method:'POST',
   headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json'},
