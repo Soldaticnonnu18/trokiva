@@ -385,3 +385,11 @@ Date : 10 novembre 2026.
 - PWA statique Render `dep-dbpks81srm7s73aoajm0` confirmée **live**.
 - API et portail membre Render `dep-dbpks8sipgvc738140sg` confirmés **live** ; logs de build **21 tests réussis / 0 échec / 1 test PostgreSQL isolé ignoré**. Journal `TROKIVA database schema readiness: ready`.
 - Commit déployé `afc4cc8b`. Vérification visuelle manuelle sur iPhone/desktop **non effectuée** à ce stade ; ne pas garantir absence de débordements sans cette recette.
+
+
+## 10/11/2026 — Corrections ciblées des captures iPhone (Explorer et Publier)
+- L'utilisateur a fourni des captures montrant une hauteur excessive de page, la barre mobile flottante laissant apparaître le footer et de trop grands blocs de formulaire.
+- `index.html`: styles `trokiva-mobile-corrections-v2` (CSS uniquement) : header abaissé à 52px, flèches à 32px, sections sans hauteur minimale forcée, deux actions Explorer sur une même ligne, carte d'absence d'annonce compacte, champs Publier à 40px et description à 78px, espacement resserré.
+- Barre mobile ancrée au bas de l'écran avec safe-area iOS, fond opaque et rayon supérieur uniquement ; footer masqué dans la PWA mobile pour éviter sa bande derrière le dock ; contenu conservé en bureau.
+- `sw.js` : cache `trokiva-preview-v9`. Test smoke : vérification des règles critiques et des balises `style` équilibrées.
+- Ni les fonctions de navigation, ni les brouillons locaux, ni les données PostgreSQL, ni le logo n'ont été modifiés. Contrôle visuel sur iPhone réel encore nécessaire après déploiement.
