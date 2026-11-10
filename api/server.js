@@ -139,14 +139,19 @@ const routed=async(req,res)=>{
  }
  if(req.method==='GET'&&p==='/api/listings'){
   if(!pool)return json(res,503,{error:'Catalogue pas encore raccordé à la base de données'});
+  if(!(await requireReady(res)))return;
   const data=await pool.query("SELECT l.id,l.title,l.category,l.description,l.wanted,l.city,l.created_at FROM listings l JOIN users u ON u.id=l.owner_id WHERE l.state='published' AND u.disabled_at IS NULL AND u.email_verified_at IS NOT NULL ORDER BY l.created_at DESC LIMIT 30");
   return json(res,200,{items:data.rows});
  }
  if(req.method==='GET'&&p==='/api/me'){
+  if(!pool)return json(res,200,{user:null});
+  if(!(await requireReady(res)))return;
   const u=await userFromRequest(req);return json(res,200,{user:u});
  }
  if(p.startsWith('/api/')){
   if(!pool)return replyError(res,503,'Base de données non configurée');
+  // All data-dependent APIs fail closed until every required table and column exists.
+  if(!(await requireReady(res)))return;
   if(!['GET','HEAD','OPTIONS'].includes(req.method||'')){
    if(!csrfOk(req))return replyError(res,403,'Origine non autorisée');
    if(!(req.headers['content-type']||'').toLowerCase().startsWith('application/json'))return replyError(res,415,'Contenu JSON requis');
