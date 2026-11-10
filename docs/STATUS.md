@@ -224,3 +224,14 @@ Date : 10 novembre 2026.
 - API Render `dep-dbpjehtbedkc738u0p7g` confirmée `live` sur commit `31e32d01`.
 - Journaux Render : **15/15 tests réussis, 0 échec** dont le verrouillage d'accès aux messages.
 - Les tests sont hors base réelle ; **aucune conversation réelle validée** tant que la migration de huit tables et les comptes n'ont pas été contrôlés.
+
+
+## 10/11/2026 — Confirmation bilatérale de remise
+- Ajout de `exchange_confirmations` : neuvième table idempotente, une confirmation unique par participant et par proposition.
+- `POST /api/my/offers/:id/confirm` accepte uniquement un des deux participants actifs et vérifiés d'une proposition acceptée, dont l'annonce est réservée et n'a pas été retirée par modération.
+- Les décisions sont sérialisées sous verrou PostgreSQL. La première confirmation reste en attente ; **seule la deuxième confirmation distincte** peut faire passer l'annonce de `reserved` à `exchanged`.
+- `GET /api/my/offers` affiche le nombre de confirmations et l'état du membre connecté. Le portail membre propose une confirmation explicite avec avertissement ; aucun faux échange n'est ajouté.
+- La messagerie reste accessible à la lecture après clôture ; les messages ne sont envoyables que pendant la réservation active.
+- Tests ajoutés pour contraintes de confirmation et refus sans base.
+- À valider avant ouverture : transactions PostgreSQL avec deux comptes réels, litiges/recours en cas de non-remise, procédures de modération des échanges et préservation des données.
+- **Aucune remise physique réelle testée** ; le bouton ne démontre pas à lui seul qu'un objet a changé de mains.
