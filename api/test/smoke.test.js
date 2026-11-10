@@ -68,6 +68,8 @@ test('API sans secrets : aucun compte ni catalogue exposé',async()=>{
   assert.equal(noDbMessages.status,503);
   const noDbWrite=await fetch(base+'/api/my/offers/00000000-0000-4000-8000-000000000000/messages',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({content:'Bonjour'})});
   assert.equal(noDbWrite.status,503);
+  const confirmWithoutDb=await fetch(base+'/api/my/offers/00000000-0000-4000-8000-000000000000/confirm',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:'{}'});
+  assert.equal(confirmWithoutDb.status,503);
   const verify=await fetch(base+'/verify.html');
   assert.equal(verify.status,200);
   const html=await verify.text();
