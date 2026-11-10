@@ -40,6 +40,16 @@ test('API sans secrets : aucun compte ni catalogue exposé',async()=>{
   const resetPage=await fetch(base+'/reset-password.html');
   assert.equal(resetPage.status,200);
   assert.match(await resetPage.text(),/Nouveau mot de passe/);
+  const appleIcon=await fetch(base+'/apple-touch-icon.png');
+  assert.equal(appleIcon.status,200);
+  assert.match(appleIcon.headers.get('content-type')||'',/image\/png/);
+  const appleBytes=new Uint8Array(await appleIcon.arrayBuffer());
+  assert.deepEqual([...appleBytes.slice(0,8)],[137,80,78,71,13,10,26,10]);
+  const dv=new DataView(appleBytes.buffer,appleBytes.byteOffset,appleBytes.byteLength);
+  assert.equal(dv.getUint32(16),180);
+  assert.equal(dv.getUint32(20),180);
+  const home=await(await fetch(base+'/index.html')).text();
+  assert.match(home,/apple-touch-icon\.png\?v=2/);
   const brandAsset=await fetch(base+'/assets/trokiva-symbol.svg');
   assert.equal(brandAsset.status,200);
   assert.match(brandAsset.headers.get('content-type')||'',/svg/);
