@@ -109,7 +109,7 @@ const routed=async(req,res)=>{
  }
  if(req.method==='GET'&&p==='/api/listings'){
   if(!pool)return json(res,503,{error:'Catalogue pas encore raccordé à la base de données'});
-  const data=await pool.query("SELECT id,title,category,description,wanted,city,created_at FROM listings WHERE state='published' ORDER BY created_at DESC LIMIT 30");
+  const data=await pool.query("SELECT l.id,l.title,l.category,l.description,l.wanted,l.city,l.created_at FROM listings l JOIN users u ON u.id=l.owner_id WHERE l.state='published' AND u.disabled_at IS NULL AND u.email_verified_at IS NOT NULL ORDER BY l.created_at DESC LIMIT 30");
   return json(res,200,{items:data.rows});
  }
  if(req.method==='GET'&&p==='/api/me'){
