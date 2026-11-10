@@ -86,7 +86,7 @@ function csrfOk(req){
  return site==='same-origin';
 }
 async function serve(res,name){
- const types={'compte.html':'text/html; charset=utf-8','index.html':'text/html; charset=utf-8','manifest.webmanifest':'application/manifest+json','icon.svg':'image/svg+xml','sw.js':'text/javascript; charset=utf-8','verify.html':'text/html; charset=utf-8','reset-password.html':'text/html; charset=utf-8','assets/trokiva-symbol.svg':'image/svg+xml'};
+ const types={'compte.html':'text/html; charset=utf-8','index.html':'text/html; charset=utf-8','manifest.webmanifest':'application/manifest+json','icon.svg':'image/svg+xml','apple-touch-icon.png':'image/png','sw.js':'text/javascript; charset=utf-8','verify.html':'text/html; charset=utf-8','reset-password.html':'text/html; charset=utf-8','assets/trokiva-symbol.svg':'image/svg+xml'};
  const type=types[name];if(!type)return replyError(res,404,'Introuvable');
  try{const content=await fs.readFile(path.join(base,name));res.writeHead(200,{'content-type':type,'cache-control':name==='sw.js'?'no-cache':'public, max-age=120'});res.end(content)}catch{replyError(res,404,'Introuvable')}
 }
@@ -552,7 +552,7 @@ const routed=async(req,res)=>{
   return replyError(res,404,'Route API introuvable');
  }
  if(req.method!=='GET'&&req.method!=='HEAD')return replyError(res,405,'Méthode non autorisée');
- const pages={'/compte.html':'compte.html','/':'index.html','/index.html':'index.html','/manifest.webmanifest':'manifest.webmanifest','/icon.svg':'icon.svg','/sw.js':'sw.js','/verify.html':'verify.html','/reset-password.html':'reset-password.html','/assets/trokiva-symbol.svg':'assets/trokiva-symbol.svg'};
+ const pages={'/compte.html':'compte.html','/':'index.html','/index.html':'index.html','/manifest.webmanifest':'manifest.webmanifest','/icon.svg':'icon.svg','/apple-touch-icon.png':'apple-touch-icon.png','/sw.js':'sw.js','/verify.html':'verify.html','/reset-password.html':'reset-password.html','/assets/trokiva-symbol.svg':'assets/trokiva-symbol.svg'};
  const file=pages[p];return file?serve(res,file):replyError(res,404,'Introuvable');
 };
 const server=http.createServer((req,res)=>{routed(req,res).catch(err=>{console.error('Request error',err.code||err.name||'unknown');if(!res.headersSent)replyError(res,err.status||500,err.status?err.message:'Erreur serveur');else res.end()})});
