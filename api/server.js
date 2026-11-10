@@ -102,8 +102,8 @@ const routed=async(req,res)=>{
  if(req.method==='GET'&&p==='/api/ready'){
   if(!pool)return json(res,503,{ready:false,database:'unconfigured',schema:'not_checked'});
   try{
-   const q=await pool.query("SELECT count(*)::integer AS total FROM information_schema.tables WHERE table_schema='public' AND table_name=ANY($1::text[])",[['users','sessions','email_verifications','password_resets','listings','exchange_offers']]);
-   const schemaReady=q.rows[0]?.total===6;
+   const q=await pool.query("SELECT count(*)::integer AS total FROM information_schema.tables WHERE table_schema='public' AND table_name=ANY($1::text[])",[['users','sessions','email_verifications','password_resets','listings','exchange_offers','listing_reports']]);
+   const schemaReady=q.rows[0]?.total===7;
    return json(res,schemaReady?200:503,{ready:schemaReady,database:'connected',schema:schemaReady?'ready':'incomplete'});
   }catch(e){console.error('Readiness check failed',e.code||e.name);return json(res,503,{ready:false,database:'unavailable',schema:'not_checked'})}
  }
@@ -242,6 +242,60 @@ const routed=async(req,res)=>{
    const token=cookie(req).trokiva_session;
    if(token)await pool.query('UPDATE sessions SET revoked_at=now() WHERE token_hash=$1',[hash(token)]);
    setCookie(res,'',0);return json(res,200,{ok:true});
+  }
+  if(req.method==='POST'&&p==='/api/reports'){
+   const u=await userFromRequest(req);
+   if(!u)return replyError(res,401,'Compte vérifié nécessaire pour signaler une annonce');
+   if(!rateLimit(req,'report',6,60*60*1000))return replyError(res,429,'Trop de signalements');
+   const input=await body(req);
+   const listingId=typeof input.listingId==='string'?input.listingId:'';
+   const reason=typeof input.reason==='string'?input.reason:'';
+   const details=typeof input.details==='string'?input.details.trim():'';
+   if(!/^[a-f0-9-]{36}$/.test(listingId)||!['prohibited','fraud','misleading','harassment','other'].includes(reason)||details.length>1000)
+    return replyError(res,400,'Signalement invalide');
+   try{
+    const q=await pool.query(
+     "INSERT INTO listing_reports(id,listing_id,reporter_id,reason,details) SELECT $1,l.id,$2,$3,$4 FROM listings l WHERE l.id=$5 AND l.state='published' AND l.owner_id<>$2 RETURNING id,created_at",
+     [randomUUID(),u.id,reason,details,listingId]
+    );
+    if(!q.rowCount)return replyError(res,404,'Annonce introuvable ou non signalable');
+    return json(res,201,{report:{id:q.rows[0].id,created_at:q.rows[0].created_at},message:'Signalement enregistré pour examen.'});
+   }catch(e){
+    if(e.code==='23505')return replyError(res,409,'Vous avez déjà signalé cette annonce');
+    throw e;
+   }
+  }
+  const adminEmail=(process.env.TROKIVA_ADMIN_EMAIL||'').trim().toLowerCase();
+  if(p==='/api/admin/reports' || /^\/api\/admin\/reports\/[a-f0-9-]{36}\/(dismiss|hide)$/.test(p)){
+   const u=await userFromRequest(req);
+   if(!u||!adminEmail||u.email!==adminEmail)return replyError(res,404,'Introuvable');
+   if(req.method==='GET'&&p==='/api/admin/reports'){
+    const rows=await pool.query(
+     "SELECT r.id,r.listing_id,r.reason,r.details,r.status,r.created_at,l.title,l.state AS listing_state FROM listing_reports r JOIN listings l ON l.id=r.listing_id WHERE r.status='open' ORDER BY r.created_at ASC LIMIT 100"
+    );
+    return json(res,200,{items:rows.rows});
+   }
+   const moderation=p.match(/^\/api\/admin\/reports\/([a-f0-9-]{36})\/(dismiss|hide)$/);
+   if(moderation&&req.method==='POST'){
+    if(!rateLimit(req,'moderate',30,60*60*1000))return replyError(res,429,'Trop d'+'actions');
+    const [,reportId,action]=moderation;
+    const client=await pool.connect();
+    try{
+     await client.query('BEGIN');
+     const q=await client.query(
+      "SELECT r.id,r.listing_id,r.status FROM listing_reports r WHERE r.id=$1 FOR UPDATE",[reportId]
+     );
+     if(!q.rowCount||q.rows[0].status!=='open'){
+      await client.query('ROLLBACK');return replyError(res,404,'Signalement déjà traité ou introuvable');
+     }
+     if(action==='hide'){
+      await client.query("UPDATE listings SET state='hidden',updated_at=now() WHERE id=$1 AND state='published'",[q.rows[0].listing_id]);
+      await client.query("UPDATE listing_reports SET status='reviewed',reviewed_at=now() WHERE listing_id=$1 AND status='open'",[q.rows[0].listing_id]);
+     }else await client.query("UPDATE listing_reports SET status='dismissed',reviewed_at=now() WHERE id=$1",[reportId]);
+     await client.query('COMMIT');
+     return json(res,200,{ok:true});
+    }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}finally{client.release()}
+   }
   }
   if(p==='/api/my/offers' || /^\/api\/my\/offers\/[a-f0-9-]{36}\/(accept|decline|cancel)$/.test(p)){
    if(!exchangesEnabled)return replyError(res,503,'Échanges non encore activés : contrôles de sécurité en cours');
