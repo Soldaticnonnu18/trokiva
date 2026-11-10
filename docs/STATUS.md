@@ -68,3 +68,14 @@ Date : 10 novembre 2026.
 - Déploiement API demandé pour le commit `509a5702` ; consulter le statut Render avant toute déclaration de succès.
 - Les inscriptions restent fermées ; aucun compte ou envoi de validation réel n'a été testé.
 - `DATABASE_URL` et migration restent à configurer/exécuter via l'environnement privé Render.
+
+
+## 10 novembre 2026 — suite : récupération sécurisée du compte
+- Nouvelle table SQL `password_resets` ajoutée au schéma, avec hachage du jeton et expiration.
+- `POST /api/auth/request-password-reset` et `POST /api/auth/reset-password` implémentés côté API.
+- Nouvelle page `reset-password.html`, avec lien de réinitialisation transmis dans le fragment `#token=` et effacé de l'URL à l'ouverture.
+- Nouveau mot de passe haché par scrypt avec sel distinct ; jeton utilisable une seule fois ; révocation des sessions existantes après modification.
+- `api/migrate.js` et `/api/ready` contrôlent maintenant cinq tables.
+- Tests de sécurité hors base complétés pour la réinitialisation désactivée et la page HTML.
+- Cette fonctionnalité **n'est pas encore opérationnelle avec de véritables utilisateurs** : base non raccordée et domaine e-mail non configuré.
+- Le dépôt reste public, aucun secret n'y est enregistré.
