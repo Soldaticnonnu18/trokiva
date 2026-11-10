@@ -15,14 +15,22 @@ La base `trokiva-db` est en plan gratuit et annonce l'expiration du **10 décemb
 - Conserver **ENABLE_REGISTRATION=false**.
 - Aucun assouplissement de l'IP allowlist externe n'est nécessaire : les deux services sont hébergés à Francfort.
 
-## 2. Installer le schéma (opération unique, après sauvegarde)
+## 2. Initialiser le schéma avec un redémarrage contrôlé
 
-Le script idempotent `api/migrate.js` applique `api/schema.sql` et vérifie les quatre tables. L'exécuter depuis un environnement Render où `DATABASE_URL` est présente, avec `cd api && npm run migrate`. Il ne doit pas être exécuté depuis le navigateur. Le connecteur Render disponible ici est limité aux requêtes SQL **en lecture seule** : il ne peut pas créer les tables. Ne pas coller le secret de connexion dans la conversation.
+Après avoir ajouté la bonne `DATABASE_URL` interne, configurer temporairement dans le service API :
+- `RUN_MIGRATIONS_ON_BOOT=true`
+- `ENABLE_REGISTRATION=false`
+
+Déployer le service `trokiva-api` sur Render. Au démarrage, la migration `api/schema.sql` s'exécute **uniquement si le drapeau est égal à `true`** ; elle crée si nécessaire les cinq tables, sous verrou consultatif PostgreSQL. En cas d'erreur, le nouveau serveur ne démarre pas et le déploiement doit être considéré comme non validé.
+
+Contrôler `/api/ready` et les journaux Render. Dès que `ready:true` est confirmé, remettre `RUN_MIGRATIONS_ON_BOOT=false` afin d'éviter de répéter les migrations lors de chaque démarrage.
+
+La commande `cd api && npm run migrate` reste disponible pour une opération manuelle depuis un environnement sécurisé où la variable `DATABASE_URL` existe. Aucune clé ne doit être publiée dans GitHub, dans le navigateur ou dans cette conversation.
 
 ## 3. Vérifications
 
 - `https://trokiva-api.onrender.com/api/health` répond si le processus Node est en ligne ; `databaseConfigured` confirme seulement la présence de la variable de connexion.
-- `https://trokiva-api.onrender.com/api/ready` doit répondre 200 et `ready:true` uniquement après connexion PostgreSQL et présence des quatre tables. Tant qu'il retourne 503, l'API n'est pas prête pour les utilisateurs.
+- `https://trokiva-api.onrender.com/api/ready` doit répondre 200 et `ready:true` uniquement après connexion PostgreSQL et présence des cinq tables. Tant qu'il retourne 503, l'API n'est pas prête pour les utilisateurs.
 
 ## 4. E-mails (avant toute ouverture)
 
