@@ -40,6 +40,15 @@ test('API sans secrets : aucun compte ni catalogue exposé',async()=>{
   const resetPage=await fetch(base+'/reset-password.html');
   assert.equal(resetPage.status,200);
   assert.match(await resetPage.text(),/Nouveau mot de passe/);
+  const memberPage=await fetch(base+'/compte.html');
+  assert.equal(memberPage.status,200);
+  const htmlMember=await memberPage.text();
+  assert.match(htmlMember,/Mon espace TROKIVA/);
+  assert.match(htmlMember,/Les comptes ne sont pas encore disponibles/);
+  const publishWithoutDb=await fetch(base+'/api/my/listings/00000000-0000-4000-8000-000000000000/publish',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:'{}'});
+  assert.equal(publishWithoutDb.status,503);
+  const hideWithoutDb=await fetch(base+'/api/my/listings/00000000-0000-4000-8000-000000000000/hide',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:'{}'});
+  assert.equal(hideWithoutDb.status,503);
   const verify=await fetch(base+'/verify.html');
   assert.equal(verify.status,200);
   const html=await verify.text();
