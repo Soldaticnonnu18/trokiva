@@ -59,3 +59,12 @@ Date : 10 novembre 2026.
 - `docs/RENDER_DATABASE_SETUP.md` décrit la connexion interne sans divulguer les secrets.
 - L'API **n'est toujours pas raccordée** à `trokiva-db`, schéma non appliqué, inscriptions toujours fermées.
 - Aucun changement MINBA ou autres projets.
+
+
+## Poursuite du 10 novembre — fiabilisation de la validation e-mail
+- Correction du flux d'inscription : l'e-mail est désormais envoyé après validation de la transaction PostgreSQL, plutôt que pendant une transaction ouverte.
+- Endpoint de renvoi limité `POST /api/auth/resend-verification` ajouté pour les comptes en attente de validation.
+- Tests de non-ouverture sans base ajoutés pour le renvoi, la session et les annonces privées.
+- Déploiement API demandé pour le commit `509a5702` ; consulter le statut Render avant toute déclaration de succès.
+- Les inscriptions restent fermées ; aucun compte ou envoi de validation réel n'a été testé.
+- `DATABASE_URL` et migration restent à configurer/exécuter via l'environnement privé Render.
