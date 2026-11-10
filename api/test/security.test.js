@@ -27,5 +27,5 @@ test('Moderation lock: owner cannot restore or republish an admin-removed listin
  assert.match(server,/moderation_hidden_at=COALESCE\(moderation_hidden_at,now\(\)\)/);
  assert.match(server,/state='hidden' AND moderation_hidden_at IS NULL RETURNING id,state/);
  assert.match(server,/state='draft' AND moderation_hidden_at IS NULL RETURNING id,state/);
- assert.match(server,/state='draft' AND moderation_hidden_at IS NULL AND length\(trim\(description\)\)>=20/);
+ assert.match(server,/state='draft' AND length\(trim\(title\)\)>=3 AND length\(trim\(category\)\)>0 AND moderation_hidden_at IS NULL AND length\(trim\(description\)\)>=20/);
 });
