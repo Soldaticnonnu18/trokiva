@@ -94,4 +94,15 @@ test('migration strictement opt-in et inaccessible sans configuration',()=>{
  });
  assert.notEqual(boot.status,0);
  assert.match(boot.stderr,/Migration demandée mais DATABASE_URL absente/);
+ for(const flag of ['ENABLE_REGISTRATION','ENABLE_EXCHANGES']){
+  const guarded=spawnSync(process.execPath,['server.js'],{
+   cwd:new URL('../',import.meta.url),
+   env:{...process.env,DATABASE_URL:'',RUN_MIGRATIONS_ON_BOOT:'true',ENABLE_REGISTRATION:'false',ENABLE_EXCHANGES:'false',[flag]:'true'},
+   encoding:'utf8',
+   timeout:6000
+  });
+  assert.notEqual(guarded.status,0);
+  assert.match(guarded.stderr,/Migration refusée : fermer les inscriptions et les échanges/);
+ }
+
 });
