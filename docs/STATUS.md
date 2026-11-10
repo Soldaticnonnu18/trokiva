@@ -351,3 +351,13 @@ Date : 10 novembre 2026.
 - Construction : **21 tests réussis**, **0 échec**, **1 test PostgreSQL jetable ignoré** sur Render (22 au total).
 - Journal de démarrage : `TROKIVA database schema readiness: ready` et `TROKIVA API listening on port 10000`.
 - Les protections de rotation des jetons de réinitialisation sont intégrées ; test PostgreSQL de bout en bout et e-mails réels restent à confirmer avant ouverture.
+
+
+## 10/11/2026 — Correction directe de l'icône iOS TROKIVA
+- Signalement utilisateur : icône installée sur iPhone floue / illisible. Diagnostic : la balise `apple-touch-icon` incorporait un PNG rectangulaire 285×228 au lieu d'une icône carrée ; `icon.svg` utilise aussi ce PNG embarqué et ne constitue pas un logo vectoriel natif.
+- Nouveau fichier binaire `apple-touch-icon.png` **180×180** commité dans le dépôt, dérivé du PNG original embarqué, mis à l'échelle bicubique et placé sur fond blanc carré, sans redessiner ni déformer le symbole.
+- `index.html` : balise Apple désormais `/apple-touch-icon.png?v=2` ; `manifest.webmanifest` : référence PNG carrée supplémentaire, SVG d'origine préservé ; `sw.js` : cache v7 et préchargement de l'icône.
+- API : serveur statique sait aussi servir la nouvelle image en `image/png`. Nouveau smoke-test sur signature PNG, dimensions 180×180 et référence Apple.
+- **Render static `trokiva-preview`** : déploiement `dep-dbpkocifngtc73fnbokg` confirmé `live`.
+- **Render API `trokiva-api`** : déploiement `dep-dbpkohhsrm7s73anv5kg` confirmé `live`, tests de construction 21 pass, 0 fail, 1 test PostgreSQL volontairement skipped, schéma PostgreSQL toujours `ready`.
+- Limite : l'icône source 285×228 est matricielle. Une correction de taille, de fond et de référence peut améliorer le rendu iOS mais ne transforme pas cette source en vectoriel haute résolution ; rendu après suppression et réinstallation de l'icône iPhone à confirmer visuellement. Les deux applications Render sont déployées.
