@@ -347,7 +347,7 @@ const routed=async(req,res)=>{
    if(!/^[a-f0-9-]{36}$/.test(listingId)||message.length<10||message.length>600)return replyError(res,400,'Annonce ou proposition invalide (10 à 600 caractères)');
    try{
     const q=await pool.query(
-     "INSERT INTO exchange_offers (id,listing_id,sender_id,recipient_id,message) SELECT $1,l.id,$2,l.owner_id,$3 FROM listings l JOIN users owner ON owner.id=l.owner_id WHERE l.id=$4 AND l.state='published' AND l.owner_id<>$2 AND owner.disabled_at IS NULL AND owner.email_verified_at IS NOT NULL RETURNING id,listing_id,status,created_at",
+     "INSERT INTO exchange_offers (id,listing_id,sender_id,recipient_id,message) SELECT $1,l.id,$2,l.owner_id,$3 FROM listings l JOIN users owner ON owner.id=l.owner_id WHERE l.id=$4 AND l.state='published' AND l.owner_id<>$2 AND owner.disabled_at IS NULL AND owner.email_verified_at IS NOT NULL FOR UPDATE OF l RETURNING id,listing_id,status,created_at",
      [randomUUID(),u.id,message,listingId]
     );
     return q.rowCount?json(res,201,{offer:q.rows[0]}):replyError(res,404,'Annonce indisponible ou non accessible');
