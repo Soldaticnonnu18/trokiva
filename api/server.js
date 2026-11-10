@@ -536,6 +536,14 @@ if(process.env.RUN_SERVER!=='false') {
   const tables=await migrateDatabase(dbUrl);
   console.log('TROKIVA schema migration verified:',tables.length,'tables');
  }
+ if(pool){
+  try{
+   const verified=await checkSchemaReady();
+   console.log('TROKIVA database schema readiness:',verified?'ready':'incomplete');
+  }catch(e){
+   console.error('TROKIVA database schema readiness: unavailable',e.code||e.name);
+  }
+ }else console.log('TROKIVA database schema readiness: unconfigured');
  server.listen(port,()=>console.log('TROKIVA API listening on port',port));
 }
 export {server,validListing,csrfOk};
