@@ -195,3 +195,9 @@ Date : 10 novembre 2026.
 - Accès privé modération via `TROKIVA_ADMIN_USER_ID` : l'UUID exact du compte vérifié est requis ; l'ancien contrôle par simple e-mail a été supprimé. Aucun identifiant administrateur par défaut n'est fourni.
 - Tests statiques de ces garanties ajoutés. La recette PostgreSQL complète reste impossible sans `DATABASE_URL` raccordée.
 - La documentation Render indique désormais sept tables et l'enregistrement privé de l'UUID admin après création du compte.
+
+
+## Contrôle Render de la garde de lancement
+- Déploiement `dep-dbpj90lg1s2s738ja3q0` confirmé `live` pour le commit `42af8310`.
+- Journaux de construction : **12 tests PASS, 0 échec**, incluant contrôle du schéma complet et restriction d'identité admin.
+- Les tests restent hors PostgreSQL réel ; absence de `DATABASE_URL` et de domaine e-mail TROKIVA validé.
