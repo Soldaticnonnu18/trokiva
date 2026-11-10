@@ -160,3 +160,15 @@ Date : 10 novembre 2026.
 - À développer/tester avant ouverture : proposition/acceptation sur PostgreSQL réel, signalements et modération, messagerie privée, étapes et confirmation bilatérale d'échange, prévention des abus persistante, domaine de messagerie TROKIVA, sauvegardes et politique de confidentialité.
 - Base Render gratuite `trokiva-db` expire le **10 décembre 2026** : éviter une ouverture pérenne sans plan de conservation.
 - Les tests hors base ne valent pas recette de troc réel ; ne pas activer `ENABLE_EXCHANGES` avant les contrôles.
+
+
+## Modération et signalements réels — 10/11/2026
+- `listing_reports` : 7e table SQL préparée, reliée à une annonce et à un membre réel, motif de signalement limité à une liste fermée, anti-doublon par membre et annonce.
+- `POST /api/reports` exige un compte vérifié, une annonce publiée appartenant à un autre membre, une justification valide et limite les demandes.
+- `GET /api/admin/reports`, `POST /api/admin/reports/:id/hide|dismiss` sont réservés au membre connecté ayant l'e-mail vérifié défini dans `TROKIVA_ADMIN_EMAIL` (secret Render, aucun identifiant par défaut).
+- Un modérateur autorisé peut classer un signalement ou masquer une annonce ; les signalements ouverts de cette annonce sont alors clôturés.
+- `compte.html` comporte un bouton de signalement et une file de modération, invisible aux autres comptes.
+- Le catalogue public exclut les annonces de comptes non vérifiés ou désactivés.
+- Tests enrichis : syntaxe du portail, présence du parcours de signalement, contraintes SQL, refus des actions sans base.
+- La migration doit maintenant vérifier **sept tables** et n'a toujours pas été exécutée en production. `DATABASE_URL` absent des variables accessibles via connecteur ; aucune fausse annonce ni modération simulée.
+- Avant ouverture, vérifier manuellement un incident complet (signalement → examen → décision → retrait du catalogue), avec comptes consentants et base réelle ; renforcer les limites anti-abus distribuées et prévoir recours/audit détaillé.
