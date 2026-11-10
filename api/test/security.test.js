@@ -29,3 +29,20 @@ test('Moderation lock: owner cannot restore or republish an admin-removed listin
  assert.match(server,/state='draft' AND moderation_hidden_at IS NULL RETURNING id,state/);
  assert.match(server,/state='draft' AND length\(trim\(title\)\)>=3 AND length\(trim\(category\)\)>0 AND moderation_hidden_at IS NULL AND length\(trim\(description\)\)>=20/);
 });
+
+test('Launch gate checks moderation column and prevents incomplete schema activation',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+ assert.match(server,/const requiredTables=\[/);
+ assert.match(server,/\['listings','moderation_hidden_at'\]/);
+ assert.match(server,/async function checkSchemaReady\(\)/);
+ assert.match(server,/if\(!\(await requireReady\(res\)\)\)return;/);
+ assert.match(server,/requiredColumns\.every/);
+});
+test('Moderation authorization requires specific existing user ID, not an email address',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+ assert.match(server,/TROKIVA_ADMIN_USER_ID/);
+ assert.match(server,/u\.id!==adminId/);
+ assert.doesNotMatch(server,/TROKIVA_ADMIN_EMAIL/);
+});
