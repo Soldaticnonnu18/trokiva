@@ -242,3 +242,11 @@ Date : 10 novembre 2026.
 - Test de schéma corrigé sans desserrer le contrôle ; second déploiement `dep-dbpjj63rjlhs7383occ0`, commit `464f21fe`, confirmé **live**.
 - Journaux de construction Render : **16 tests réussis sur 16, 0 échec**.
 - Neuf tables désormais prévues ; **aucune migration effectuée** sur PostgreSQL tant que `DATABASE_URL` privée n'est pas renseignée. Aucun échange réel effectué ni certifié par les tests.
+
+
+## 10/11/2026 — Verrou global de disponibilité API et procédure Render
+- L'ensemble des routes `/api/*` dépendant de PostgreSQL vérifie désormais la présence du schéma complet avant d'accéder aux données : comptes, annonces, signalements, modération, offres, messages et confirmations.
+- `GET /api/listings` et `GET /api/me` disposent du même contrôle. Sans `DATABASE_URL`, le mode fermé reste inchangé ; le point `/api/me` répond toujours `user:null` hors base.
+- `/api/health` et `/api/ready` restent accessibles pour diagnostiquer le raccordement.
+- La procédure `docs/RENDER_DATABASE_SETUP.md` est alignée sur **neuf tables**, et rappelle de maintenir `ENABLE_REGISTRATION=false` et `ENABLE_EXCHANGES=false` jusqu'à la recette réelle.
+- Aucun compte, message ou objet fictif n'a été créé ; la connexion privée PostgreSQL n'a pas été installée ni la migration appliquée.
