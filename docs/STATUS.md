@@ -172,3 +172,11 @@ Date : 10 novembre 2026.
 - Tests enrichis : syntaxe du portail, présence du parcours de signalement, contraintes SQL, refus des actions sans base.
 - La migration doit maintenant vérifier **sept tables** et n'a toujours pas été exécutée en production. `DATABASE_URL` absent des variables accessibles via connecteur ; aucune fausse annonce ni modération simulée.
 - Avant ouverture, vérifier manuellement un incident complet (signalement → examen → décision → retrait du catalogue), avec comptes consentants et base réelle ; renforcer les limites anti-abus distribuées et prévoir recours/audit détaillé.
+
+
+## 10 novembre 2026 — faille corrigée : contournement de modération
+- Nouvelle colonne SQL idempotente `listings.moderation_hidden_at` pour distinguer un retrait administrateur d'un masquage volontaire.
+- L'action admin `hide` rend ce verrou persistant ; un propriétaire ne peut ni restaurer ni republier un objet retiré par modération, même via l'API.
+- Les modifications de brouillons respectent également le verrou.
+- Test de non-régression ajouté dans `api/test/security.test.js`.
+- **Migration de cette colonne non exécutée** tant que la base Render n'est pas connectée ; la fonctionnalité ne doit pas être annoncée comme validée avec PostgreSQL réel.
