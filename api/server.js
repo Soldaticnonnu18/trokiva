@@ -413,10 +413,11 @@ const routed=async(req,res)=>{
    const offerId=messageRoute[1];
    if(req.method==='GET'){
     const results=await pool.query(
-     "SELECT m.id,m.offer_id,m.sender_id,m.content,m.created_at FROM exchange_messages m JOIN exchange_offers e ON e.id=m.offer_id JOIN users other_user ON other_user.id=CASE WHEN e.sender_id=$2 THEN e.recipient_id ELSE e.sender_id END WHERE m.offer_id=$1 AND e.status='accepted' AND (e.sender_id=$2 OR e.recipient_id=$2) AND other_user.disabled_at IS NULL AND other_user.email_verified_at IS NOT NULL ORDER BY m.created_at ASC,m.id ASC LIMIT 200",
+     "SELECT e.id AS offer_id,m.id,m.sender_id,m.content,m.created_at FROM exchange_offers e JOIN users other_user ON other_user.id=CASE WHEN e.sender_id=$2 THEN e.recipient_id ELSE e.sender_id END LEFT JOIN exchange_messages m ON m.offer_id=e.id WHERE e.id=$1 AND e.status='accepted' AND (e.sender_id=$2 OR e.recipient_id=$2) AND other_user.disabled_at IS NULL AND other_user.email_verified_at IS NOT NULL ORDER BY m.created_at ASC NULLS LAST,m.id ASC NULLS LAST LIMIT 200",
      [offerId,u.id]
     );
-    return json(res,200,{items:results.rows});
+    if(!results.rowCount)return replyError(res,404,'Conversation introuvable');
+    return json(res,200,{items:results.rows.filter(row=>row.id!==null).map(({offer_id,...message})=>message)});
    }
    if(!rateLimit(req,'offer-message',30,60*60*1000))return replyError(res,429,'Trop de messages envoyés');
    const input=await body(req);
