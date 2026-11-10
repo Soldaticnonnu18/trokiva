@@ -115,7 +115,6 @@ const routed=async(req,res)=>{
     await client.query('BEGIN');
     await client.query('INSERT INTO users(id,email,password_hash,password_salt) VALUES($1,$2,$3,$4)',[userId,email,digest,salt]);
     await client.query("INSERT INTO email_verifications(id,user_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '24 hours')",[randomUUID(),userId,hash(token)]);
-    await sendVerification(email,token);
     await client.query('COMMIT');
    }catch(e){
     await client.query('ROLLBACK').catch(()=>{});
@@ -123,7 +122,27 @@ const routed=async(req,res)=>{
     console.error('Inscription rejetée',e.code||e.name);
     return replyError(res,503,'Inscription indisponible. Réessayez ultérieurement.');
    }finally{client.release()}
+   try {
+    await sendVerification(email,token);
+   } catch(e) {
+    console.error('Email validation failed',e.name||'SendError');
+    return replyError(res,503,'Compte en attente de confirmation. Vous pouvez demander un nouveau lien ultérieurement.');
+   }
    return json(res,202,{message:'Si cette adresse est éligible, un e-mail sera envoyé.'});
+  }
+  if(req.method==='POST'&&p==='/api/auth/resend-verification'){
+   if(!registrationsEnabled)return replyError(res,503,'Confirmation par e-mail indisponible');
+   if(!rateLimit(req,'resend',3,60*60*1000))return replyError(res,429,'Trop de demandes');
+   const input=await body(req);
+   const email=typeof input.email==='string'?input.email.trim().toLowerCase():'';
+   if(!validEmail(email))return replyError(res,400,'Adresse e-mail invalide');
+   const generic={message:'Si ce compte existe et doit être confirmé, un e-mail sera envoyé.'};
+   const q=await pool.query('SELECT id FROM users WHERE email=$1 AND email_verified_at IS NULL AND disabled_at IS NULL',[email]);
+   if(!q.rowCount)return json(res,202,generic);
+   const token=createSecret();
+   await pool.query("INSERT INTO email_verifications(id,user_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '24 hours')",[randomUUID(),q.rows[0].id,hash(token)]);
+   try {await sendVerification(email,token)}catch(e){console.error('Email resend failed',e.name||'SendError');return replyError(res,503,'Service de messagerie temporairement indisponible')}
+   return json(res,202,generic);
   }
   if(req.method==='POST'&&p==='/api/auth/verify'){
    if(!rateLimit(req,'verify',15,60*60*1000))return replyError(res,429,'Trop de demandes');
