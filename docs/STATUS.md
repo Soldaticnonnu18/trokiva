@@ -116,3 +116,14 @@ Date : 10 novembre 2026.
 - Journaux Render API : `postinstall` exécuté, vérification de syntaxe et deux tests hors base **PASS 2/2, FAIL 0**.
 - Les tests ne couvrent pas encore une transaction réelle PostgreSQL, un parcours e-mail ni un test navigateur responsive complet.
 - Ni `DATABASE_URL` ni le schéma PostgreSQL n'ont été activés/exécutés durant cette opération ; aucune publication d'annonce réelle confirmée.
+
+
+## Correction logo mobile et cohérence graphique — 10/11/2026
+- Source du symbole validé retrouvée dans les assets de la maquette : 285 × 228 px, au lieu de la miniature 64 × 51 px en ligne.
+- Nouvelle ressource `assets/trokiva-symbol.svg` intégrant le symbole du fichier validé, sans changement volontaire du dessin ; export palette optimisé pour le web.
+- `index.html` : en-tête remplacé par l'emblème source, favicon et icône Apple mis à jour.
+- `icon.svg` : illustration PWA reconstruite autour du même symbole, avec source supérieure.
+- `sw.js` : cache `trokiva-preview-v4` et ressource d'emblème ajoutée à la liste hors ligne.
+- `compte.html` : le portail membre reprend désormais le véritable logo ; `api/server.js` expose la ressource de façon explicite.
+- Test API du logo ajouté. Le rendu iPhone et l'icône d'installation restent à valider visuellement après redéploiement.
+- La connexion DATABASE_URL, la migration PostgreSQL et les e-mails vérifiés ne sont toujours pas raccordés.
