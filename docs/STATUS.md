@@ -97,3 +97,13 @@ Date : 10 novembre 2026.
 - Liste des conditions de lancement créée dans `docs/AUTH_RELEASE_CHECKLIST.md`.
 - Déploiement Render API `dep-dbpifh49v7es73c0d1c0` confirmé `live` sur le commit `3052415`.
 - Toujours bloqué : `DATABASE_URL` non configurée, migration non exécutée, domaine e-mail TROKIVA non vérifié. Aucune ouverture utilisateur.
+
+
+## Nouveau chantier — annonces et espace membre sur même origine (10/11/2026)
+- Portail `/compte.html` ajouté à `trokiva-api` : connexion, inscription contrôlée, réinitialisation, renvoi de vérification, déconnexion, gestion des annonces personnelles. Le portail vérifie `/api/ready` avant de présenter les formulaires.
+- Parcours des annonces préparé : création et édition privées, publication avec description (au moins 20 caractères) et ville, masquage et retour en brouillon. Vérification du propriétaire via session côté API. Aucune annonce n'est inventée.
+- Accès explicite depuis le profil de la PWA de prévisualisation ; les brouillons locaux ne sont pas confondus avec les annonces serveur.
+- `api/package.json` bloque désormais les builds Render si `node --check` ou les tests locaux échouent (`postinstall`).
+- L'authentification reste indisponible en production tant que `DATABASE_URL`, les cinq tables et l'expéditeur TROKIVA ne sont pas validés ; le statut Render `live` ne doit pas être confondu avec une plateforme prête à vendre/échanger.
+- Les deux sous-domaines sont distincts : l'authentification est prévue sur le domaine `trokiva-api.onrender.com`, sous **même origine** que ses routes API. Une intégration définitive sous le domaine principal reste à programmer.
+- Les images, la modération, les signalements et les propositions de troc sont encore des chantiers nécessaires avant ouverture publique.
