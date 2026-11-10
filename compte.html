@@ -158,8 +158,48 @@ async function loadOffers(){
    if(incoming){add('Accepter','accept');add('Refuser','decline')}
    else add('Annuler','cancel');
   }
+  if(offer.status==='accepted')add('Conversation privée',()=>openConversation(offer.id,offer.listing_title||'Échange'));
   card.append(info,buttons);host.append(card);
  }
+}
+async function openConversation(offerId,title){
+ const old=el('exchange-conversation');
+ if(old)old.remove();
+ const box=document.createElement('section');box.id='exchange-conversation';box.className='card';
+ const heading=safeText('h2','Conversation privée — '+title);
+ const guidance=safeText('p','Échangez uniquement avec l’autre membre. Ne partagez pas de documents d’identité, codes ni informations bancaires. Privilégiez un lieu public pour la remise.');
+ guidance.className='muted small';
+ const messages=document.createElement('div');messages.id='exchange-messages';messages.setAttribute('aria-live','polite');
+ const form=document.createElement('form');
+ const field=document.createElement('label');field.className='field';field.textContent='Votre message';
+ const input=document.createElement('textarea');input.required=true;input.maxLength=1200;input.rows=3;input.placeholder='Message aux deux participants de cet échange';field.append(input);
+ const send=document.createElement('button');send.className='btn';send.type='submit';send.textContent='Envoyer';
+ const refresh=document.createElement('button');refresh.className='btn secondary';refresh.type='button';refresh.textContent='Actualiser';
+ const close=document.createElement('button');close.className='btn secondary';close.type='button';close.textContent='Fermer';
+ const actions=document.createElement('div');actions.className='actions';actions.append(send,refresh,close);
+ form.append(field,actions);box.append(heading,guidance,messages,form);
+ el('my-offers').after(box);
+ const render=async()=>{
+  const result=await api('/api/my/offers/'+offerId+'/messages');
+  messages.replaceChildren();
+  if(!result.items?.length){messages.append(safeText('p','Aucun message échangé.'));return}
+  for(const msg of result.items){
+   const row=document.createElement('article');row.className='item';
+   row.append(safeText('p',msg.content));
+   messages.append(row);
+  }
+ };
+ refresh.addEventListener('click',()=>render().catch(e=>feedback(e.message)));
+ close.addEventListener('click',()=>box.remove());
+ form.addEventListener('submit',async event=>{
+  event.preventDefault();send.disabled=true;
+  try{
+   await api('/api/my/offers/'+offerId+'/messages',{method:'POST',body:JSON.stringify({content:input.value})});
+   input.value='';await render();feedback('Message enregistré dans la conversation privée.');
+  }catch(e){feedback(e.message)}finally{send.disabled=false}
+ });
+ try{await render();box.scrollIntoView({behavior:'smooth'})}
+ catch(e){feedback(e.message);box.remove()}
 }
 async function loadModeration(){
  const container=el('moderation');
