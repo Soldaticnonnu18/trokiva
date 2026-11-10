@@ -2,6 +2,94 @@
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#124e46"><meta name="robots" content="noindex"><title>TROKIVA — Espace membre</title>
 <style>
 :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#202825;background:#f8f7f2}*{box-sizing:border-box}body{margin:0}header{background:#fff;border-bottom:1px solid #e4e9e1}header>div{max-width:1040px;margin:auto;display:flex;justify-content:space-between;align-items:center;padding:17px 20px}.brand{font-weight:900;letter-spacing:-.8px;font-size:23px;color:#124e46}a{color:#124e46}main{max-width:1040px;margin:30px auto 75px;padding:0 20px}h1{font-size:clamp(27px,4vw,42px);letter-spacing:-1.2px;margin:0 0 8px}h2{font-size:23px;letter-spacing:-.5px;margin:0 0 15px}h3{font-size:18px;margin:0}.muted{color:#64756a;line-height:1.5}.card{background:#fff;border-radius:22px;padding:25px;border:1px solid #e5e9e1;margin-top:20px;box-shadow:0 4px 15px #124e4606}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:grid;gap:6px;margin:10px 0;font-weight:650;font-size:14px}.field input,.field textarea,.field select{border-radius:12px;border:1px solid #cbd8cc;background:white;padding:13px;min-width:0;width:100%;font:inherit;color:#202825}.field textarea{min-height:100px}.btn{border:1px solid #124e46;padding:12px 18px;border-radius:22px;background:#124e46;color:white;font:inherit;font-weight:750;cursor:pointer}.btn.secondary{background:white;color:#124e46}.btn:disabled{opacity:.5;cursor:wait}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}.notice{padding:14px 16px;background:#f2f8e5;border-radius:14px;color:#31583e;margin:18px 0}.notice.warning{background:#fff4dc;color:#755019}.hidden,[hidden]{display:none!important}#feedback{min-height:24px;font-size:14px;font-weight:650}hr{border:0;border-top:1px solid #e5e9e1;margin:24px 0}.item{border:1px solid #e4e8df;border-radius:15px;padding:17px;margin:11px 0;display:flex;gap:10px;justify-content:space-between;align-items:center}.item p{margin:5px 0;color:#66756e;font-size:13px}.item .actions{margin:0}.item button{padding:8px 12px;font-size:12px}.state{font-size:11px;border-radius:12px;padding:5px 8px;background:#eef4ea;color:#124e46;white-space:nowrap}.small{font-size:12px}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tabs button{padding:10px 15px;border-radius:20px;border:1px solid #d9e3d4;background:white;color:#124e46;cursor:pointer}.tabs button[aria-selected="true"]{background:#124e46;color:#fff}#logout{margin-left:auto}@media(max-width:650px){main{margin-top:20px}.grid{grid-template-columns:1fr}.card{padding:18px}.item{display:block}.item .actions{margin-top:10px}}
+</style>
+<style id="trokiva-member-app-shell-v1">
+:root{--ui-green:#124e46;--ui-lime:#c5ef85;--ui-ink:#172923;--ui-muted:#617269;--ui-border:#e1e9df;--ui-canvas:#f4f6f2}
+html{min-width:320px;scroll-padding-top:72px}
+body{background:var(--ui-canvas);color:var(--ui-ink);overflow-x:clip}
+button,input,select,textarea{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+a,button,input,select,textarea{-webkit-tap-highlight-color:transparent}
+button{touch-action:manipulation}
+header{position:sticky;top:0;z-index:10;background:#fffffff5;box-shadow:0 2px 12px #1436260a}
+header>div{max-width:1030px;min-height:62px;padding:10px 20px;gap:12px}
+header .brand{display:flex;align-items:center;gap:4px;min-width:0;white-space:nowrap;font-size:20px;letter-spacing:-.5px;text-decoration:none}
+header .brand img{width:34px;height:29px;flex:none}
+header a:last-child{font-size:12px;font-weight:650;text-align:right}
+main{width:min(100%,1030px);margin:0 auto;padding:24px 20px 55px;min-height:calc(100dvh - 62px)}
+h1{font-size:clamp(24px,3vw,32px);letter-spacing:-.75px;line-height:1.18;margin:0 0 5px}
+h2{font-size:18px;line-height:1.3;margin:0 0 12px;letter-spacing:-.25px}
+h3{font-size:14px;line-height:1.4;margin:0}
+main>.muted{font-size:12px;line-height:1.5;margin:4px 0 13px;max-width:640px}
+.muted{color:var(--ui-muted)}
+.card{border:1px solid var(--ui-border);border-radius:18px;padding:19px;background:#fff;margin-top:12px;box-shadow:0 4px 16px #123b2407;min-width:0}
+.card:first-child{margin-top:13px}
+.card:has(>.actions>h2)>.actions{margin-top:0;align-items:center}
+.card .actions{margin-top:12px;gap:8px}
+.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.field{font-size:12px;gap:5px;margin:9px 0;font-weight:700;min-width:0}
+.field input,.field textarea,.field select{min-height:44px;border-radius:11px;padding:11px 12px;border:1px solid #d5e0d3;color:var(--ui-ink);background:#fff;outline:none;font-size:13px}
+.field textarea{min-height:90px;resize:vertical}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#317862;box-shadow:0 0 0 3px #c5ef8555}
+.btn{border-radius:12px;min-height:42px;padding:10px 14px;font-size:12px;line-height:1.25}
+.btn.secondary{border-color:#d6e3d7}
+.tabs{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding:3px 0 9px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{border-radius:11px;white-space:nowrap;flex:none;font-size:12px;padding:10px 12px}
+.tabs button[aria-selected="true"]{background:var(--ui-green);border-color:var(--ui-green)}
+form[data-form]{max-width:580px;margin-top:12px}
+form[data-form]>.btn{margin-top:6px}
+.notice{border:1px solid #e3edce;background:#f3f8e8;border-radius:12px;padding:11px 13px;font-size:12px;line-height:1.5;margin:12px 0}
+.notice.warning{border-color:#f0e0b9}
+#feedback{font-size:12px;line-height:1.5;min-height:0}
+#feedback:not(:empty){padding:11px 13px;border:1px solid #d8e5d5;border-radius:12px;background:#fff;margin:12px 0}
+.item{min-width:0;background:#fcfdfb;display:flex;align-items:flex-start;gap:11px;padding:13px 14px;border-radius:13px;border:1px solid var(--ui-border);margin:8px 0;flex-wrap:wrap}
+.item>div:first-child{min-width:0;flex:1 1 210px;overflow-wrap:anywhere}
+.item p{color:var(--ui-muted);line-height:1.5;margin:4px 0;font-size:12px}
+.item .actions{flex:0 1 auto;align-items:center;justify-content:flex-start;max-width:100%;gap:6px;margin:0}
+.item .actions button{min-height:36px;padding:8px 10px;font-size:11px}
+.state{display:inline-flex;align-items:center;margin-top:5px;font-weight:700;border-radius:9px;padding:5px 9px}
+#my-listings,#my-offers,#public-listings,#moderation-reports,#exchange-messages{min-width:0;overflow-wrap:anywhere}
+#my-listings>p,#my-offers>p,#public-listings>p,#moderation-reports>p{color:var(--ui-muted);font-size:12px;line-height:1.5;background:#f7faf5;padding:13px;border-radius:12px}
+#exchange-conversation{border:1px solid #cddfcd;scroll-margin-top:80px}
+#exchange-messages{max-height:350px;overflow:auto;scrollbar-width:thin;padding:5px 0}
+#exchange-messages .item{display:block;max-width:min(90%,580px)}
+#exchange-conversation form{margin-top:12px}
+#exchange-conversation .actions{justify-content:flex-start}
+#logout{margin-left:auto}
+:where(button,a,input,select,textarea):focus-visible{outline:3px solid #83ad70;outline-offset:2px}
+@media(max-width:700px){
+ header>div{min-height:56px;padding:9px 14px}
+ header .brand{font-size:18px}
+ header .brand img{width:29px;height:25px}
+ header a:last-child{font-size:11px}
+ main{padding:18px 12px calc(26px + env(safe-area-inset-bottom,0px))}
+ h1{font-size:25px}
+ h2{font-size:17px}
+ .card{margin-top:10px;padding:14px;border-radius:16px;box-shadow:0 2px 12px #123b2408}
+ .grid{grid-template-columns:1fr;gap:0}
+ .tabs{margin-right:-2px}
+ .tabs button{font-size:11px;padding:10px 11px}
+ .item{padding:12px;display:block}
+ .item .actions{display:flex;flex-wrap:wrap;margin-top:9px}
+ .item .actions button{flex:1 1 auto;min-width:0}
+ .actions{gap:7px}
+ .card .actions>.btn{max-width:100%}
+ #listing-form>.actions{display:grid;grid-template-columns:1fr 1fr}
+ #listing-form>.actions .btn{min-width:0}
+ #listing-form>.actions .btn:first-child{grid-column:1/-1}
+ .notice{margin:10px 0}
+ #exchange-conversation .actions{display:grid;grid-template-columns:1fr 1fr}
+ #exchange-conversation .actions button:first-child{grid-column:1/-1}
+}
+@media(max-width:360px){
+ main{padding-inline:10px}
+ header>div{padding-inline:10px}
+ header .brand{font-size:17px}
+ .card{padding:12px}
+ .item{padding:10px}
+ .btn{font-size:11px;padding-inline:9px}
+}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style></head><body>
 <header><div><a class="brand" href="/"><img src="/assets/trokiva-symbol.svg" alt="" width="38" height="30" style="object-fit:contain;vertical-align:middle;margin-right:7px">TROKIVA</a><a href="/">Retour à l'accueil</a></div></header>
 <main><h1>Mon espace TROKIVA</h1><p class="muted">Gérez votre compte et vos objets à échanger. Aucun objet fictif n'est proposé.</p>
