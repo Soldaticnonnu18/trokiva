@@ -47,3 +47,15 @@ Date : 10 novembre 2026.
 - Smoke test serveur ajouté au dépôt ; son exécution réussie n'est pas encore attestée.
 - L'API et la PWA étant sur deux sous-domaines distincts de Render, prévoir un point d'entrée same-origin pour les cookies HttpOnly avant d'activer les comptes.
 - Aucun compte utilisateur ni mail de vérification envoyé pendant ce chantier.
+
+
+## Reprise du 10/11/2026 — 14 h 52 (Europe/Paris)
+- Dépôt toujours `public` : ne jamais déposer de secret.
+- PostgreSQL TROKIVA vérifiée `available`, expire le 10 décembre 2026.
+- API Render `trokiva-api` déployée `live` avec le commit `391308d5` et journaux confirmant `node api/server.js` sur le port 10000.
+- `GET /api/health` : distinction claire du serveur en fonctionnement et de la simple configuration de DATABASE_URL.
+- `GET /api/ready` : vérifie la présence des quatre tables PostgreSQL, répond 503 si la connexion ou le schéma n'est pas prêt.
+- Test smoke mis à jour et CI GitHub Actions ajoutée ; **résultat d'exécution CI non vérifié**.
+- `docs/RENDER_DATABASE_SETUP.md` décrit la connexion interne sans divulguer les secrets.
+- L'API **n'est toujours pas raccordée** à `trokiva-db`, schéma non appliqué, inscriptions toujours fermées.
+- Aucun changement MINBA ou autres projets.
