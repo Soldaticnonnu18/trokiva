@@ -61,3 +61,15 @@ test('Moderation records success only if the listing was actually hidden',async(
  assert.match(server,/if\(!hidden\.rowCount\)/);
  assert.match(server,/Annonce déjà retirée ou devenue indisponible/);
 });
+
+test('Private messages require accepted offer, participant and active listing',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+ const schema=readFileSync(new URL('../schema.sql',import.meta.url),'utf8');
+ assert.match(schema,/CREATE TABLE IF NOT EXISTS exchange_messages/);
+ assert.match(schema,/REFERENCES exchange_offers\(id\) ON DELETE CASCADE/);
+ assert.match(server,/e\.status='accepted'/);
+ assert.match(server,/e\.sender_id=\$2 OR e\.recipient_id=\$2/);
+ assert.match(server,/l\.moderation_hidden_at IS NULL/);
+ assert.match(server,/const requiredTables=\[[^\]]*'exchange_messages'\]/);
+});
