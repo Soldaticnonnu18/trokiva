@@ -218,3 +218,9 @@ Date : 10 novembre 2026.
 - Pas de comptes fictifs ni de conversation simulée ; le chat réel reste désactivé tant que `ENABLE_EXCHANGES` et le schéma ne sont pas validés.
 - Tests ajoutés pour contrôle des autorisations, schéma et fermeture fail-closed sans base. **Aucun test PostgreSQL end-to-end ni test humain encore réalisé.**
 - Pour un lancement sécurisé : prévoir gestion des signalements des messages, conservation/suppression et moyens de contact protégés.
+
+
+## Vérification du déploiement de la messagerie
+- API Render `dep-dbpjehtbedkc738u0p7g` confirmée `live` sur commit `31e32d01`.
+- Journaux Render : **15/15 tests réussis, 0 échec** dont le verrouillage d'accès aux messages.
+- Les tests sont hors base réelle ; **aucune conversation réelle validée** tant que la migration de huit tables et les comptes n'ont pas été contrôlés.
