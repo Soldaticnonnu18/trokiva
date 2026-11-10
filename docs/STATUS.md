@@ -322,3 +322,10 @@ Date : 10 novembre 2026.
 - Correctif `GET /api/my/offers/:id/messages` : une offre introuvable ou inaccessible retourne désormais 404, au lieu d'une réponse 200 avec liste vide. Les deux participants d'une offre acceptée obtiennent toujours 200 avec `items:[]` si aucun message n'a été échangé.
 - Sélection SQL protégée par identifiants de participants et statut `accepted` ; nouveaux contrôles statiques et test d'intégration PostgreSQL isolé (refus tiers / conversation vide autorisée).
 - Inscriptions et échanges publics maintenus fermés. Les tests d'intégration PostgreSQL isolés et la chaîne e-mail n'ont pas encore de validation de production.
+
+
+## 10 novembre 2026 — Contact e-mail conservé et protection des conversations déployée
+- Choix utilisateur : conserver l'adresse e-mail existante comme contact/gestion de TROKIVA, sans création d'une boîte distincte. La délivrabilité des e-mails automatiques dépend néanmoins d'un expéditeur autorisé par le fournisseur ; aucun domaine appartenant à un autre projet n'est automatiquement réutilisé.
+- Correctif côté API de `GET /api/my/offers/:id/messages` : 404 quand l'offre acceptée n'est pas accessible au compte connecté, 200 et tableau vide pour une conversation autorisée sans messages. Test de non-régression statique et test d'intégration PostgreSQL isolé mis à jour.
+- Déploiement Render `dep-dbpkct9srm7s73amrjo0` confirmé **live**, commit `66ce7e78`. Journaux : **19 tests réussis / 0 échec / 1 ignoré sur Render** ; `TROKIVA database schema readiness: ready`.
+- Aucune création de compte ni envoi de confirmation e-mail réel n'a été effectué ; `ENABLE_REGISTRATION=false` et `ENABLE_EXCHANGES=false` restent en place.
