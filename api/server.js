@@ -289,7 +289,7 @@ const routed=async(req,res)=>{
       await client.query('ROLLBACK');return replyError(res,404,'Signalement déjà traité ou introuvable');
      }
      if(action==='hide'){
-      await client.query("UPDATE listings SET state='hidden',updated_at=now() WHERE id=$1 AND state='published'",[q.rows[0].listing_id]);
+      await client.query("UPDATE listings SET state='hidden',moderation_hidden_at=COALESCE(moderation_hidden_at,now()),updated_at=now() WHERE id=$1 AND state='published'",[q.rows[0].listing_id]);
       await client.query("UPDATE listing_reports SET status='reviewed',reviewed_at=now() WHERE listing_id=$1 AND status='open'",[q.rows[0].listing_id]);
      }else await client.query("UPDATE listing_reports SET status='dismissed',reviewed_at=now() WHERE id=$1",[reportId]);
      await client.query('COMMIT');
@@ -384,7 +384,7 @@ const routed=async(req,res)=>{
    if(!u)return replyError(res,401,'Connexion nécessaire');
    if(!rateLimit(req,'publish',12,60*60*1000))return replyError(res,429,'Trop de publications');
    const result=await pool.query(
-    "UPDATE listings SET state='published',updated_at=now() WHERE id=$1 AND owner_id=$2 AND state='draft' AND length(trim(title))>=3 AND length(trim(category))>0 AND length(trim(description))>=20 AND length(trim(city))>=2 RETURNING id,state,title,created_at",
+    "UPDATE listings SET state='published',updated_at=now() WHERE id=$1 AND owner_id=$2 AND state='draft' AND length(trim(title))>=3 AND length(trim(category))>0 AND moderation_hidden_at IS NULL AND length(trim(description))>=20 AND length(trim(city))>=2 RETURNING id,state,title,created_at",
     [publish[1],u.id]
    );
    if(!result.rowCount)return replyError(res,422,'Annonce introuvable ou incomplète : description de 20 caractères et ville requises');
@@ -402,7 +402,7 @@ const routed=async(req,res)=>{
   if(restore && req.method==='POST'){
    const u=await userFromRequest(req);
    if(!u)return replyError(res,401,'Connexion nécessaire');
-   const result=await pool.query("UPDATE listings SET state='draft',updated_at=now() WHERE id=$1 AND owner_id=$2 AND state='hidden' RETURNING id,state",[restore[1],u.id]);
+   const result=await pool.query("UPDATE listings SET state='draft',updated_at=now() WHERE id=$1 AND owner_id=$2 AND state='hidden' AND moderation_hidden_at IS NULL RETURNING id,state",[restore[1],u.id]);
    if(!result.rowCount)return replyError(res,404,'Annonce introuvable ou non masquée');
    return json(res,200,{listing:result.rows[0]});
   }
@@ -417,7 +417,7 @@ const routed=async(req,res)=>{
    if(req.method==='PATCH'){
     const input=await body(req);
     if(!validListing(input))return replyError(res,400,'Annonce invalide');
-    const q=await pool.query("UPDATE listings SET title=$3,category=$4,description=$5,wanted=$6,city=$7,updated_at=now() WHERE id=$1 AND owner_id=$2 AND state='draft' RETURNING id,state",[id,u.id,input.title.trim(),input.category.trim(),(input.description||'').trim(),(input.wanted||'').trim(),(input.city||'').trim()]);
+    const q=await pool.query("UPDATE listings SET title=$3,category=$4,description=$5,wanted=$6,city=$7,updated_at=now() WHERE id=$1 AND owner_id=$2 AND state='draft' AND moderation_hidden_at IS NULL RETURNING id,state",[id,u.id,input.title.trim(),input.category.trim(),(input.description||'').trim(),(input.wanted||'').trim(),(input.city||'').trim()]);
     return q.rowCount?json(res,200,{listing:q.rows[0]}):replyError(res,404,'Brouillon introuvable');
    }
   }
