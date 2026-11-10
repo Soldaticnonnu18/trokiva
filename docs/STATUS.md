@@ -271,3 +271,10 @@ Date : 10 novembre 2026.
 - Logs Render : 17 tests réussis, aucun échec ; le test PostgreSQL est `SKIP` dans Render par sécurité (base jetable réservée à GitHub Actions).
 - Statut de l'exécution GitHub Actions PostgreSQL **non confirmé** à ce stade ; ne pas compter ce test comme validé sans rapport GitHub.
 - La liaison privée `DATABASE_URL` et les migrations PostgreSQL de production demeurent non réalisées.
+
+
+## 10 novembre 2026 — Renforcement recette d'intégration GitHub
+- `api/test/postgres.integration.test.js` élargi : sur PostgreSQL 17 **jetable local**, le scénario couvre désormais également un signalement créé par un participant, le refus des doublons, l'accès à la file de modération, le refus d'un retrait par non-admin, le retrait effectif par admin, et l'impossibilité de restaurer l'annonce modérée.
+- L'identité d'administration du test est uniquement l'UUID d'un compte temporaire dans la base jetable. Aucune modification des comptes et secrets de production.
+- **État GitHub Actions non confirmé** : le connecteur GitHub n'expose pas ici les runs `push` du workflow et `get_commit_combined_status` renvoie une liste vide. Vérifier l'onglet Actions du dépôt et examiner le journal du job `postgres-integration` avant de déclarer ce test PASS.
+- Les changements de ce passage portent sur le test d'intégration et la documentation : aucun déploiement Render nécessaire.
