@@ -232,6 +232,69 @@ const routed=async(req,res)=>{
    if(token)await pool.query('UPDATE sessions SET revoked_at=now() WHERE token_hash=$1',[hash(token)]);
    setCookie(res,'',0);return json(res,200,{ok:true});
   }
+  if(req.method==='GET'&&p==='/api/my/offers'){
+   const u=await userFromRequest(req);
+   if(!u)return replyError(res,401,'Connexion nécessaire');
+   const data=await pool.query(
+    "SELECT e.id,e.listing_id,e.sender_id,e.recipient_id,e.message,e.status,e.created_at,e.updated_at,l.title AS listing_title,l.state AS listing_state FROM exchange_offers e JOIN listings l ON l.id=e.listing_id WHERE e.sender_id=$1 OR e.recipient_id=$1 ORDER BY e.created_at DESC LIMIT 100",
+    [u.id]
+   );
+   return json(res,200,{items:data.rows});
+  }
+  if(req.method==='POST'&&p==='/api/my/offers'){
+   const u=await userFromRequest(req);
+   if(!u)return replyError(res,401,'Connexion nécessaire');
+   if(!rateLimit(req,'offer-create',10,60*60*1000))return replyError(res,429,'Trop de propositions');
+   const input=await body(req);
+   const listingId=typeof input.listingId==='string'?input.listingId:'';
+   const message=typeof input.message==='string'?input.message.trim():'';
+   if(!/^[a-f0-9-]{36}$/.test(listingId)||message.length<10||message.length>600)return replyError(res,400,'Annonce ou proposition invalide (10 à 600 caractères)');
+   try{
+    const q=await pool.query(
+     "INSERT INTO exchange_offers (id,listing_id,sender_id,recipient_id,message) SELECT $1,l.id,$2,l.owner_id,$3 FROM listings l JOIN users owner ON owner.id=l.owner_id WHERE l.id=$4 AND l.state='published' AND l.owner_id<>$2 AND owner.disabled_at IS NULL AND owner.email_verified_at IS NOT NULL RETURNING id,listing_id,status,created_at",
+     [randomUUID(),u.id,message,listingId]
+    );
+    return q.rowCount?json(res,201,{offer:q.rows[0]}):replyError(res,404,'Annonce indisponible ou non accessible');
+   }catch(e){
+    if(e.code==='23505')return replyError(res,409,'Une proposition en attente existe déjà pour cette annonce');
+    throw e;
+   }
+  }
+  const offerDecision=p.match(/^\/api\/my\/offers\/([a-f0-9-]{36})\/(accept|decline|cancel)$/);
+  if(offerDecision&&req.method==='POST'){
+   const u=await userFromRequest(req);
+   if(!u)return replyError(res,401,'Connexion nécessaire');
+   if(!rateLimit(req,'offer-decision',20,60*60*1000))return replyError(res,429,'Trop de décisions');
+   const [,offerId,decision]=offerDecision;
+   const client=await pool.connect();
+   try{
+    await client.query('BEGIN');
+    const lock=await client.query(
+     "SELECT e.id,e.listing_id,e.sender_id,e.recipient_id,e.status,l.state AS listing_state,l.owner_id FROM exchange_offers e JOIN listings l ON l.id=e.listing_id WHERE e.id=$1 AND (e.sender_id=$2 OR e.recipient_id=$2) FOR UPDATE OF l,e",
+     [offerId,u.id]
+    );
+    const offer=lock.rows[0];
+    if(!offer || offer.status!=='pending'){
+     await client.query('ROLLBACK');return replyError(res,404,'Proposition introuvable ou déjà traitée');
+    }
+    const recipientAction=decision==='accept'||decision==='decline';
+    if(recipientAction && offer.recipient_id!==u.id || decision==='cancel'&&offer.sender_id!==u.id){
+     await client.query('ROLLBACK');return replyError(res,403,'Action non autorisée');
+    }
+    if(decision==='accept'){
+     if(offer.listing_state!=='published'||offer.owner_id!==u.id){
+      await client.query('ROLLBACK');return replyError(res,409,'Cette annonce n’est plus disponible');
+     }
+     await client.query("UPDATE listings SET state='reserved',updated_at=now() WHERE id=$1 AND state='published'",[offer.listing_id]);
+     await client.query("UPDATE exchange_offers SET status='accepted',updated_at=now() WHERE id=$1",[offerId]);
+     await client.query("UPDATE exchange_offers SET status='declined',updated_at=now() WHERE listing_id=$1 AND id<>$2 AND status='pending'",[offer.listing_id,offerId]);
+    }else{
+     await client.query('UPDATE exchange_offers SET status=$2,updated_at=now() WHERE id=$1',[offerId,decision==='cancel'?'cancelled':'declined']);
+    }
+    await client.query('COMMIT');
+    return json(res,200,{offer:{id:offerId,status:decision==='accept'?'accepted':decision==='cancel'?'cancelled':'declined'}});
+   }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}finally{client.release()}
+  }
   if(p==='/api/my/listings'){
    const u=await userFromRequest(req);
    if(!u)return replyError(res,401,'Connexion nécessaire');
