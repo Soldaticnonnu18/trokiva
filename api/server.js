@@ -94,11 +94,13 @@ function validListing(p){
  if(!p||typeof p!=='object')return false;
  return typeof p.title==='string'&&p.title.trim().length>=3&&p.title.length<=100&&typeof p.category==='string'&&p.category.trim().length>0&&p.category.length<=80&&typeof (p.description??'')==='string'&&(p.description??'').length<=1200&&typeof (p.wanted??'')==='string'&&(p.wanted??'').length<=100&&typeof (p.city??'')==='string'&&(p.city??'').length<=100
 }
-const requiredTables=['users','sessions','email_verifications','password_resets','listings','exchange_offers','listing_reports'];
+const requiredTables=['users','sessions','email_verifications','password_resets','listings','exchange_offers','listing_reports','exchange_messages'];
 const requiredColumns=[
  ['listings','moderation_hidden_at'],
  ['users','email_verified_at'],
  ['exchange_offers','recipient_id'],
+ ['exchange_messages','offer_id'],
+ ['exchange_messages','sender_id'],
  ['listing_reports','reviewed_at']
 ];
 async function checkSchemaReady(){
@@ -327,6 +329,10 @@ const routed=async(req,res)=>{
     }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}finally{client.release()}
    }
   }
+  if(/^\/api\/my\/offers\/[a-f0-9-]{36}\/messages$/.test(p)){
+   if(!exchangesEnabled)return replyError(res,503,'Messagerie des échanges non activée');
+   if(!(await requireReady(res)))return;
+  }
   if(p==='/api/my/offers' || /^\/api\/my\/offers\/[a-f0-9-]{36}\/(accept|decline|cancel)$/.test(p)){
    if(!exchangesEnabled)return replyError(res,503,'Échanges non encore activés : contrôles de sécurité en cours');
    if(!(await requireReady(res)))return;
@@ -358,6 +364,28 @@ const routed=async(req,res)=>{
     if(e.code==='23505')return replyError(res,409,'Une proposition en attente existe déjà pour cette annonce');
     throw e;
    }
+  }
+  const messageRoute=p.match(/^\/api\/my\/offers\/([a-f0-9-]{36})\/messages$/);
+  if(messageRoute && (req.method==='GET'||req.method==='POST')){
+   const u=await userFromRequest(req);
+   if(!u)return replyError(res,401,'Connexion nécessaire');
+   const offerId=messageRoute[1];
+   if(req.method==='GET'){
+    const results=await pool.query(
+     "SELECT m.id,m.offer_id,m.sender_id,m.content,m.created_at FROM exchange_messages m JOIN exchange_offers e ON e.id=m.offer_id JOIN users other_user ON other_user.id=CASE WHEN e.sender_id=$2 THEN e.recipient_id ELSE e.sender_id END WHERE m.offer_id=$1 AND e.status='accepted' AND (e.sender_id=$2 OR e.recipient_id=$2) AND other_user.disabled_at IS NULL AND other_user.email_verified_at IS NOT NULL ORDER BY m.created_at ASC,m.id ASC LIMIT 200",
+     [offerId,u.id]
+    );
+    return json(res,200,{items:results.rows});
+   }
+   if(!rateLimit(req,'offer-message',30,60*60*1000))return replyError(res,429,'Trop de messages envoyés');
+   const input=await body(req);
+   const content=typeof input.content==='string'?input.content.trim():'';
+   if(content.length<1||content.length>1200)return replyError(res,400,'Message invalide : 1 à 1200 caractères');
+   const results=await pool.query(
+    "INSERT INTO exchange_messages(id,offer_id,sender_id,content) SELECT $1,e.id,$2,$3 FROM exchange_offers e JOIN listings l ON l.id=e.listing_id JOIN users other_user ON other_user.id=CASE WHEN e.sender_id=$2 THEN e.recipient_id ELSE e.sender_id END WHERE e.id=$4 AND e.status='accepted' AND l.state='reserved' AND l.moderation_hidden_at IS NULL AND (e.sender_id=$2 OR e.recipient_id=$2) AND other_user.disabled_at IS NULL AND other_user.email_verified_at IS NOT NULL RETURNING id,offer_id,sender_id,content,created_at",
+    [randomUUID(),u.id,content,offerId]
+   );
+   return results.rowCount?json(res,201,{message:results.rows[0]}):replyError(res,403,'Conversation indisponible');
   }
   const offerDecision=p.match(/^\/api\/my\/offers\/([a-f0-9-]{36})\/(accept|decline|cancel)$/);
   if(offerDecision&&req.method==='POST'){
