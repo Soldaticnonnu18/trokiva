@@ -88,4 +88,12 @@ CREATE TABLE IF NOT EXISTS exchange_messages (
  created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS exchange_messages_offer_idx ON exchange_messages(offer_id,created_at,id);
+-- Both participants must separately confirm physical exchange completion.
+CREATE TABLE IF NOT EXISTS exchange_confirmations (
+ offer_id uuid NOT NULL REFERENCES exchange_offers(id) ON DELETE CASCADE,
+ user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ confirmed_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(offer_id,user_id)
+);
+CREATE INDEX IF NOT EXISTS exchange_confirmations_user_idx ON exchange_confirmations(user_id,confirmed_at DESC);
 COMMIT;
