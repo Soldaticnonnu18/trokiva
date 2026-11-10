@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {randomUUID,randomBytes,scrypt as scryptCb} from 'node:crypto';
+import {randomUUID,randomBytes,scrypt as scryptCb,createHash} from 'node:crypto';
 import {promisify} from 'node:util';
 import {spawn} from 'node:child_process';
 import pg from 'pg';
@@ -42,6 +42,25 @@ test('PostgreSQL réel isolé : inscription vérifiée, annonce, offre, messages
    await new Promise(r=>setTimeout(r,200));
   }
   assert.ok(ready,'API indisponible avec PostgreSQL de test');
+  const pendingId=randomUUID();
+  const oldToken=randomBytes(32).toString('hex');
+  const newToken=randomBytes(32).toString('hex');
+  const salt=randomBytes(16).toString('hex');
+  const digest=(await scrypt(password,salt,64)).toString('hex');
+  await pool.query('INSERT INTO users(id,email,password_hash,password_salt) VALUES ($1,$2,$3,$4)',[pendingId,'pending@example.invalid',digest,salt]);
+  for(const token of [oldToken,newToken]){
+   await pool.query("INSERT INTO email_verifications(id,user_id,token_hash,expires_at) VALUES ($1,$2,$3,now()+interval '24 hours')",[randomUUID(),pendingId,createHash('sha256').update(token).digest('hex')]);
+  }
+  const verify=await call('/api/auth/verify','POST',{token:newToken});
+  assert.equal(verify.response.status,200,JSON.stringify(verify.result));
+  const replay=await call('/api/auth/verify','POST',{token:newToken});
+  assert.equal(replay.response.status,400);
+  const oldVerification=await call('/api/auth/verify','POST',{token:oldToken});
+  assert.equal(oldVerification.response.status,400);
+  const verifiedAccount=await pool.query('SELECT email_verified_at FROM users WHERE id=$1',[pendingId]);
+  assert.ok(verifiedAccount.rows[0].email_verified_at);
+  const pendingTokens=await pool.query('SELECT count(*)::integer AS n FROM email_verifications WHERE user_id=$1 AND consumed_at IS NULL',[pendingId]);
+  assert.equal(pendingTokens.rows[0].n,0);
   const cookies=[];
   for(const u of users){
    const login=await call('/api/auth/login','POST',{email:u.email,password});
