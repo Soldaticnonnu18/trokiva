@@ -379,3 +379,9 @@ Date : 10 novembre 2026.
 - Service Worker `sw.js` : cache mis à jour de `v7` à `v8`. Tests smoke renforcés pour la présence des couches UI et les contraintes mobiles.
 - Aucune annonce ou conversation fictive injectée, aucune modification du schéma PostgreSQL ou des réglages de sécurité.
 - Vérifier le rendu sur véritable iPhone, petits écrans Android et bureau après déploiement ; les tests statiques ne démontrent pas à eux seuls l'absence de tous problèmes visuels.
+
+
+## Contrôle déploiement refonte interface — 10/11/2026
+- PWA statique Render `dep-dbpks81srm7s73aoajm0` confirmée **live**.
+- API et portail membre Render `dep-dbpks8sipgvc738140sg` confirmés **live** ; logs de build **21 tests réussis / 0 échec / 1 test PostgreSQL isolé ignoré**. Journal `TROKIVA database schema readiness: ready`.
+- Commit déployé `afc4cc8b`. Vérification visuelle manuelle sur iPhone/desktop **non effectuée** à ce stade ; ne pas garantir absence de débordements sans cette recette.
