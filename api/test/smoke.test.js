@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {spawn} from 'node:child_process';
+import {spawn,spawnSync} from 'node:child_process';
 
 const port=41000+Math.floor(Math.random()*1000);
 let child;
@@ -45,4 +45,23 @@ test('API sans secrets : aucun compte ni catalogue exposé',async()=>{
   const html=await verify.text();
   assert.match(html,/Vérification TROKIVA/);
  }finally{child.kill('SIGTERM')}
+});
+
+test('migration strictement opt-in et inaccessible sans configuration',()=>{
+ const run=spawnSync(process.execPath,['migrate.js'],{
+  cwd:new URL('../',import.meta.url),
+  env:{...process.env,DATABASE_URL:''},
+  encoding:'utf8',
+  timeout:6000
+ });
+ assert.notEqual(run.status,0);
+ assert.match(run.stderr,/DATABASE_URL absente/);
+ const boot=spawnSync(process.execPath,['server.js'],{
+  cwd:new URL('../',import.meta.url),
+  env:{...process.env,DATABASE_URL:'',RUN_MIGRATIONS_ON_BOOT:'true'},
+  encoding:'utf8',
+  timeout:6000
+ });
+ assert.notEqual(boot.status,0);
+ assert.match(boot.stderr,/Migration demandée mais DATABASE_URL absente/);
 });
