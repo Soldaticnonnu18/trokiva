@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#124e46"><meta name="robots" content="noindex"><title>TROKIVA — Espace membre</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#202825;background:#f8f7f2}*{box-sizing:border-box}body{margin:0}header{background:#fff;border-bottom:1px solid #e4e9e1}header>div{max-width:1040px;margin:auto;display:flex;justify-content:space-between;align-items:center;padding:17px 20px}.brand{font-weight:900;letter-spacing:-.8px;font-size:23px;color:#124e46}a{color:#124e46}main{max-width:1040px;margin:30px auto 75px;padding:0 20px}h1{font-size:clamp(27px,4vw,42px);letter-spacing:-1.2px;margin:0 0 8px}h2{font-size:23px;letter-spacing:-.5px;margin:0 0 15px}h3{font-size:18px;margin:0}.muted{color:#64756a;line-height:1.5}.card{background:#fff;border-radius:22px;padding:25px;border:1px solid #e5e9e1;margin-top:20px;box-shadow:0 4px 15px #124e4606}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:grid;gap:6px;margin:10px 0;font-weight:650;font-size:14px}.field input,.field textarea,.field select{border-radius:12px;border:1px solid #cbd8cc;background:white;padding:13px;min-width:0;width:100%;font:inherit;color:#202825}.field textarea{min-height:100px}.btn{border:1px solid #124e46;padding:12px 18px;border-radius:22px;background:#124e46;color:white;font:inherit;font-weight:750;cursor:pointer}.btn.secondary{background:white;color:#124e46}.btn:disabled{opacity:.5;cursor:wait}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}.notice{padding:14px 16px;background:#f2f8e5;border-radius:14px;color:#31583e;margin:18px 0}.notice.warning{background:#fff4dc;color:#755019}.hidden,[hidden]{display:none!important}#feedback{min-height:24px;font-size:14px;font-weight:650}hr{border:0;border-top:1px solid #e5e9e1;margin:24px 0}.item{border:1px solid #e4e8df;border-radius:15px;padding:17px;margin:11px 0;display:flex;gap:10px;justify-content:space-between;align-items:center}.item p{margin:5px 0;color:#66756e;font-size:13px}.item .actions{margin:0}.item button{padding:8px 12px;font-size:12px}.state{font-size:11px;border-radius:12px;padding:5px 8px;background:#eef4ea;color:#124e46;white-space:nowrap}.small{font-size:12px}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tabs button{padding:10px 15px;border-radius:20px;border:1px solid #d9e3d4;background:white;color:#124e46;cursor:pointer}.tabs button[aria-selected="true"]{background:#124e46;color:#fff}#logout{margin-left:auto}@media(max-width:650px){main{margin-top:20px}.grid{grid-template-columns:1fr}.card{padding:18px}.item{display:block}.item .actions{margin-top:10px}}
+</style></head><body>
+<header><div><a class="brand" href="/">↔ TROKIVA</a><a href="/">Retour à l'accueil</a></div></header>
+<main><h1>Mon espace TROKIVA</h1><p class="muted">Gérez votre compte et vos objets à échanger. Aucun objet fictif n'est proposé.</p>
+<div id="server-status" class="notice warning" role="status">Contrôle de la disponibilité des comptes…</div>
+<div id="feedback" role="status" aria-live="polite"></div>
+<section id="anonymous" hidden>
+ <div class="card"><h2>Accéder à mon compte</h2><div class="tabs"><button type="button" data-tab="login" aria-selected="true">Connexion</button><button type="button" data-tab="register" aria-selected="false">Inscription</button><button type="button" data-tab="forgot" aria-selected="false">Mot de passe oublié</button><button type="button" data-tab="resend" aria-selected="false">Renvoyer la confirmation</button></div>
+  <form id="login" data-form="login"><label class="field">Adresse e-mail<input name="email" type="email" autocomplete="username" maxlength="254" required></label><label class="field">Mot de passe<input name="password" type="password" autocomplete="current-password" required></label><button class="btn" type="submit">Se connecter</button></form>
+  <form id="register" data-form="register" hidden><label class="field">Adresse e-mail<input name="email" type="email" autocomplete="email" maxlength="254" required></label><label class="field">Mot de passe (12 caractères minimum)<input name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></label><button class="btn" type="submit">Demander un compte</button></form>
+  <form id="forgot" data-form="forgot" hidden><label class="field">Adresse e-mail<input name="email" type="email" autocomplete="email" maxlength="254" required></label><button class="btn" type="submit">Recevoir un lien</button></form>
+  <form id="resend" data-form="resend" hidden><label class="field">Adresse e-mail<input name="email" type="email" autocomplete="email" maxlength="254" required></label><button class="btn" type="submit">Renvoyer le lien</button></form>
+ </div>
+</section>
+<section id="member" hidden>
+ <div class="card"><div class="actions"><h2>Mon compte</h2><button class="btn secondary" type="button" id="logout">Déconnexion</button></div><p id="identity" class="muted"></p><p class="small">Vos annonces en ligne sont distinctes des brouillons locaux de la PWA. Ne supprimez pas vos sauvegardes locales avant leur transfert.</p></div>
+ <div class="card"><h2 id="listing-form-title">Préparer une annonce</h2><form id="listing-form"><div class="grid"><label class="field">Objet proposé<input name="title" minlength="3" maxlength="100" required></label><label class="field">Catégorie<select name="category" required><option value="">Choisir une catégorie</option><option>Mode et accessoires</option><option>Électronique</option><option>Maison</option><option>Livres et études</option><option>Sport et loisirs</option><option>Autres</option></select></label></div><label class="field">Description de l'objet<textarea name="description" maxlength="1200" placeholder="État, caractéristiques, accessoires…"></textarea></label><div class="grid"><label class="field">Ce que vous recherchez<input name="wanted" maxlength="100"></label><label class="field">Ville (sans adresse précise)<input name="city" maxlength="100"></label></div><div class="notice">Enregistrer crée un brouillon privé. La publication n'est possible qu'avec une description d'au moins 20 caractères et une ville.</div><div class="actions"><button class="btn" type="submit">Enregistrer le brouillon</button><button class="btn secondary" type="button" id="cancel-edit">Nouvelle annonce</button></div></form></div>
+ <div class="card"><h2>Mes annonces</h2><div id="my-listings" aria-live="polite"></div></div>
+</section>
+</main>
+<script>
+(()=>{
+'use strict';
+const el=id=>document.getElementById(id), forms=['login','register','forgot','resend'];
+let loggedIn=false,editingId=null,items=[];
+const feedback=message=>{el('feedback').textContent=message};
+async function api(path,options={}){
+ const response=await fetch(path,{credentials:'same-origin',...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});
+ let data={};try{data=await response.json()}catch{}
+ if(!response.ok)throw new Error(data.error||('Erreur serveur '+response.status));
+ return data;
+}
+function setTab(tab){for(const key of forms){el(key).hidden=key!==tab;const btn=document.querySelector('[data-tab="'+key+'"]');btn.setAttribute('aria-selected',String(key===tab))}}
+document.querySelectorAll('[data-tab]').forEach(btn=>btn.addEventListener('click',()=>{feedback('');setTab(btn.dataset.tab)}));
+function setIdentity(user){loggedIn=!!user;el('anonymous').hidden=loggedIn;el('member').hidden=!loggedIn;if(user)el('identity').textContent='Connecté : '+user.email}
+async function refresh(){
+ try{const me=await api('/api/me');setIdentity(me.user);if(me.user)await loadListings()}catch(e){feedback(e.message);setIdentity(null)}
+}
+async function readiness(){
+ try{
+  const r=await fetch('/api/ready',{cache:'no-store'});const data=await r.json();
+  const health=await api('/api/health');
+  if(!r.ok || !data.ready){el('server-status').textContent="Les comptes ne sont pas encore disponibles. La base de données et les tables ne sont pas prêtes.";el('anonymous').hidden=true;return}
+  el('server-status').textContent=health.registration==='enabled'?'Comptes disponibles : inscription et connexion possibles.':'La base est prête. Les nouvelles inscriptions restent désactivées.';
+  el('server-status').classList.remove('warning');
+  setTab('login');
+  await refresh();
+  if(health.registration!=='enabled'){
+   document.querySelector('[data-tab="register"]').hidden=true;
+   document.querySelector('[data-tab="resend"]').hidden=true;
+  }
+ }catch{el('server-status').textContent='Connexion au serveur indisponible. Réessayez plus tard.'}
+}
+for(const name of forms)el(name).addEventListener('submit',async e=>{
+ e.preventDefault();const button=e.target.querySelector('[type="submit"]');button.disabled=true;feedback('');
+ const data=Object.fromEntries(new FormData(e.target));
+ const routes={login:'/api/auth/login',register:'/api/auth/register',forgot:'/api/auth/request-password-reset',resend:'/api/auth/resend-verification'};
+ try{const result=await api(routes[name],{method:'POST',body:JSON.stringify(data)});
+  if(name==='login'){setIdentity(result.user);e.target.reset();await loadListings();feedback('Connexion réussie.')}
+  else{feedback(result.message||'Demande enregistrée.');e.target.reset()}
+ }catch(err){feedback(err.message)}finally{button.disabled=false}
+});
+el('logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST',body:'{}'});setIdentity(null);items=[];feedback('Déconnexion effectuée.')}catch(err){feedback(err.message)}});
+function safeText(tag,value){const node=document.createElement(tag);node.textContent=value||'';return node}
+function resetListing(){editingId=null;el('listing-form').reset();el('listing-form-title').textContent='Préparer une annonce'}
+el('cancel-edit').addEventListener('click',resetListing);
+el('listing-form').addEventListener('submit',async e=>{
+ e.preventDefault();const button=e.target.querySelector('button[type="submit"]');button.disabled=true;feedback('');
+ const data=Object.fromEntries(new FormData(e.target));const target=editingId?'/api/my/listings/'+editingId:'/api/my/listings';
+ try{await api(target,{method:editingId?'PATCH':'POST',body:JSON.stringify(data)});resetListing();await loadListings();feedback('Brouillon enregistré sur votre compte.')}catch(err){feedback(err.message)}finally{button.disabled=false}
+});
+async function action(id,verb){
+ if(verb==='delete'&&!confirm('Supprimer définitivement ce brouillon ?'))return;
+ const paths={publish:'publish',hide:'hide',restore:'restore'};
+ try{
+  await api('/api/my/listings/'+id+(paths[verb]?'/'+paths[verb]:''),{method:verb==='delete'?'DELETE':'POST',body:verb==='delete'?undefined:'{}'});
+  await loadListings();
+  feedback(verb==='publish'?'Annonce publiée.':verb==='hide'?'Annonce masquée.':verb==='restore'?'Annonce rétablie en brouillon.':'Brouillon supprimé.');
+ }catch(err){feedback(err.message)}
+}
+async function loadListings(){
+ const data=await api('/api/my/listings');items=data.items||[];const host=el('my-listings');host.replaceChildren();
+ if(!items.length){host.append(safeText('p','Aucune annonce enregistrée sur votre compte.'));return}
+ for(const item of items){
+  const card=document.createElement('article');card.className='item';
+  const info=document.createElement('div');info.append(safeText('h3',item.title),safeText('p',(item.category||'')+' · '+(item.city||'Ville non renseignée')));
+  const state=safeText('span',item.state==='published'?'Publiée':item.state==='hidden'?'Masquée':'Brouillon');state.className='state';info.append(state);
+  const buttons=document.createElement('div');buttons.className='actions';
+  const add=(label,fn)=>{const b=document.createElement('button');b.type='button';b.className='btn secondary';b.textContent=label;b.addEventListener('click',fn);buttons.append(b)};
+  if(item.state==='draft'){add('Modifier',()=>{editingId=item.id;el('listing-form-title').textContent='Modifier mon brouillon';const form=el('listing-form');for(const k of ['title','category','description','wanted','city'])form.elements.namedItem(k).value=item[k]||'';form.scrollIntoView({behavior:'smooth'});});add('Publier',()=>action(item.id,'publish'));add('Supprimer',()=>action(item.id,'delete'))}
+  if(item.state==='published')add('Masquer',()=>action(item.id,'hide'));
+  if(item.state==='hidden')add('Repasser en brouillon',()=>action(item.id,'restore'));
+  card.append(info,buttons);host.append(card)
+ }
+}
+readiness();
+})();
+</script></body></html>
