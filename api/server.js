@@ -92,8 +92,8 @@ const routed=async(req,res)=>{
  if(req.method==='GET'&&p==='/api/ready'){
   if(!pool)return json(res,503,{ready:false,database:'unconfigured',schema:'not_checked'});
   try{
-   const q=await pool.query("SELECT count(*)::integer AS total FROM information_schema.tables WHERE table_schema='public' AND table_name=ANY($1::text[])",[['users','sessions','email_verifications','password_resets','listings']]);
-   const schemaReady=q.rows[0]?.total===5;
+   const q=await pool.query("SELECT count(*)::integer AS total FROM information_schema.tables WHERE table_schema='public' AND table_name=ANY($1::text[])",[['users','sessions','email_verifications','password_resets','listings','exchange_offers']]);
+   const schemaReady=q.rows[0]?.total===6;
    return json(res,schemaReady?200:503,{ready:schemaReady,database:'connected',schema:schemaReady?'ready':'incomplete'});
   }catch(e){console.error('Readiness check failed',e.code||e.name);return json(res,503,{ready:false,database:'unavailable',schema:'not_checked'})}
  }
