@@ -28,6 +28,13 @@ test('API sans secrets : aucun compte ni catalogue exposé',async()=>{
   assert.equal(listings.status,503);
   const register=await fetch(base+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'demo@example.org',password:'sufficientlyLongPassword'})});
   assert.equal(register.status,503);
+  const resend=await fetch(base+'/api/auth/resend-verification',{method:'POST',headers:{'Content-Type':'application/json',Origin:base},body:JSON.stringify({email:'demo@example.org'})});
+  assert.equal(resend.status,503);
+  const me=await fetch(base+'/api/me');
+  assert.equal(me.status,200);
+  assert.equal((await me.json()).user,null);
+  const missing=await fetch(base+'/api/my/listings');
+  assert.equal(missing.status,503);
   const verify=await fetch(base+'/verify.html');
   assert.equal(verify.status,200);
   const html=await verify.text();
