@@ -265,3 +265,9 @@ Date : 10 novembre 2026.
 - Correction de l'expression régulière CSRF pour les requêtes HTTP locales de test, sans ouvrir les requêtes HTTP sur les domaines réels. Tests unitaires ajoutés.
 - **Résultat du workflow GitHub à confirmer** : le nombre de tests Render ne doit pas être présenté comme une preuve de transaction PostgreSQL tant que le job GitHub n'a pas réussi.
 - Raccordement `DATABASE_URL` au PostgreSQL privé Render, migrations en production et validation avec véritables membres toujours non effectués.
+
+## Validation du déploiement Render — banc PostgreSQL isolé
+- Déploiement API `dep-dbpjq3ou01pc7390g780` confirmé `live` (commit `dafd7203`).
+- Logs Render : 17 tests réussis, aucun échec ; le test PostgreSQL est `SKIP` dans Render par sécurité (base jetable réservée à GitHub Actions).
+- Statut de l'exécution GitHub Actions PostgreSQL **non confirmé** à ce stade ; ne pas compter ce test comme validé sans rapport GitHub.
+- La liaison privée `DATABASE_URL` et les migrations PostgreSQL de production demeurent non réalisées.
