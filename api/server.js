@@ -14,6 +14,7 @@ const dbUrl=process.env.DATABASE_URL || '';
 const publicUrl=process.env.PUBLIC_API_BASE_URL || '';
 const emailReady=!!process.env.RESEND_API_KEY && !!process.env.RESEND_FROM_EMAIL && /^https:\/\//.test(publicUrl);
 const registrationsEnabled=process.env.ENABLE_REGISTRATION==='true' && emailReady && !!dbUrl;
+const exchangesEnabled=process.env.ENABLE_EXCHANGES==='true' && !!dbUrl;
 const pool=dbUrl?new pg.Pool({connectionString:dbUrl,max:6,connectionTimeoutMillis:5000,ssl:process.env.DB_SSL==='true'?{rejectUnauthorized:true}:undefined}):null;
 const buckets=new Map();
 const hash=v=>createHash('sha256').update(v).digest('hex');
@@ -88,7 +89,7 @@ const routed=async(req,res)=>{
  secureHeaders(res);
  const url=new URL(req.url||'/', 'http://localhost');
  const p=url.pathname;
- if(req.method==='GET'&&p==='/api/health')return json(res,200,{ok:true,service:'trokiva-api',databaseConfigured:!!pool,registration:registrationsEnabled?'enabled':'disabled'});
+ if(req.method==='GET'&&p==='/api/health')return json(res,200,{ok:true,service:'trokiva-api',databaseConfigured:!!pool,registration:registrationsEnabled?'enabled':'disabled',exchanges:exchangesEnabled?'enabled':'disabled'});
  if(req.method==='GET'&&p==='/api/ready'){
   if(!pool)return json(res,503,{ready:false,database:'unconfigured',schema:'not_checked'});
   try{
@@ -231,6 +232,9 @@ const routed=async(req,res)=>{
    const token=cookie(req).trokiva_session;
    if(token)await pool.query('UPDATE sessions SET revoked_at=now() WHERE token_hash=$1',[hash(token)]);
    setCookie(res,'',0);return json(res,200,{ok:true});
+  }
+  if(p==='/api/my/offers' || /^\/api\/my\/offers\/[a-f0-9-]{36}\/(accept|decline|cancel)$/.test(p)){
+   if(!exchangesEnabled)return replyError(res,503,'Échanges non encore activés : contrôles de sécurité en cours');
   }
   if(req.method==='GET'&&p==='/api/my/offers'){
    const u=await userFromRequest(req);
