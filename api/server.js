@@ -11,10 +11,25 @@ const base=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const port=Number(process.env.PORT||3001);
 const origin=process.env.APP_ORIGIN || '';
 const dbUrl=process.env.DATABASE_URL || '';
-const registrationsEnabled=process.env.ENABLE_REGISTRATION==='true' && !!process.env.EMAIL_VERIFY_ENDPOINT;
+const publicUrl=process.env.PUBLIC_API_BASE_URL || '';
+const emailReady=!!process.env.RESEND_API_KEY && !!process.env.RESEND_FROM_EMAIL && /^https:\/\//.test(publicUrl);
+const registrationsEnabled=process.env.ENABLE_REGISTRATION==='true' && emailReady && !!dbUrl;
 const pool=dbUrl?new pg.Pool({connectionString:dbUrl,max:6,connectionTimeoutMillis:5000,ssl:process.env.DB_SSL==='true'?{rejectUnauthorized:true}:undefined}):null;
 const buckets=new Map();
 const hash=v=>createHash('sha256').update(v).digest('hex');
+const validEmail=v=>typeof v==='string' && v.length<=254 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v);
+const createSecret=()=>randomBytes(32).toString('hex');
+async function sendVerification(email,token) {
+ const link=publicUrl.replace(/\\/$/,'')+'/verify.html#token='+token;
+ const response=await fetch('https://api.resend.com/emails',{
+  method:'POST',
+  headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json'},
+  body:JSON.stringify({from:process.env.RESEND_FROM_EMAIL,to:[email],subject:'Confirmez votre adresse e-mail TROKIVA',html:'<p>Pour activer votre compte TROKIVA, confirmez votre adresse e-mail :</p><p><a href="'+link+'">Confirmer mon adresse</a></p><p>Ce lien expire dans 24 heures. Si vous n’avez pas demandé ce compte, ignorez ce message.</p>'}),
+  signal:AbortSignal.timeout(10000)
+ });
+ if(!response.ok)throw new Error('Envoi e-mail impossible');
+}
+
 const json=(res,status,body,extra={})=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...extra});res.end(JSON.stringify(body))};
 const replyError=(res,status,message)=>json(res,status,{error:message});
 const allowedMethods='GET, POST, PATCH, DELETE, OPTIONS';
@@ -48,7 +63,7 @@ async function userFromRequest(req){
 }
 function csrfOk(req){const host=req.headers.host;const reqOrigin=req.headers.origin;if(reqOrigin){try{return new URL(reqOrigin).host===host}catch{return false}}const site=req.headers['sec-fetch-site'];return site==='same-origin'||site==='none'}
 async function serve(res,name){
- const types={'index.html':'text/html; charset=utf-8','manifest.webmanifest':'application/manifest+json','icon.svg':'image/svg+xml','sw.js':'text/javascript; charset=utf-8'};
+ const types={'index.html':'text/html; charset=utf-8','manifest.webmanifest':'application/manifest+json','icon.svg':'image/svg+xml','sw.js':'text/javascript; charset=utf-8','verify.html':'text/html; charset=utf-8'};
  const type=types[name];if(!type)return replyError(res,404,'Introuvable');
  try{const content=await fs.readFile(path.join(base,name));res.writeHead(200,{'content-type':type,'cache-control':name==='sw.js'?'no-cache':'public, max-age=120'});res.end(content)}catch{replyError(res,404,'Introuvable')}
 }
@@ -60,7 +75,7 @@ const routed=async(req,res)=>{
  secureHeaders(res);
  const url=new URL(req.url||'/', 'http://localhost');
  const p=url.pathname;
- if(req.method==='GET'&&p==='/api/health')return json(res,200,{ok:true,service:'trokiva-api',database:!!pool,registration:registrationsEnabled?'configured':'disabled'});
+ if(req.method==='GET'&&p==='/api/health')return json(res,200,{ok:true,service:'trokiva-api',database:!!pool,registration:registrationsEnabled?'enabled':'disabled'});
  if(req.method==='GET'&&p==='/api/listings'){
   if(!pool)return json(res,503,{error:'Catalogue pas encore raccordé à la base de données'});
   const data=await pool.query("SELECT id,title,category,description,wanted,city,created_at FROM listings WHERE state='published' ORDER BY created_at DESC LIMIT 30");
@@ -77,7 +92,44 @@ const routed=async(req,res)=>{
   }
   if(req.method==='POST'&&p==='/api/auth/register'){
    if(!registrationsEnabled)return replyError(res,503,'Inscriptions non activées : vérification e-mail manquante');
-   return replyError(res,503,'Envoi de validation e-mail non encore raccordé');
+   if(!rateLimit(req,'signup',3,60*60*1000))return replyError(res,429,'Trop de demandes');
+   const input=await body(req);
+   const email=typeof input.email==='string'?input.email.trim().toLowerCase():'';
+   const password=typeof input.password==='string'?input.password:'';
+   if(!validEmail(email)||password.length<12||password.length>128)return replyError(res,400,'Adresse e-mail invalide ou mot de passe trop court (12 caractères minimum)');
+   const existing=await pool.query('SELECT id,email_verified_at FROM users WHERE email=$1',[email]);
+   if(existing.rowCount)return json(res,202,{message:'Si cette adresse est éligible, un e-mail sera envoyé.'});
+   const salt=randomBytes(16).toString('hex');
+   const digest=(await scrypt(password,salt,64)).toString('hex');
+   const userId=randomUUID(),token=createSecret();
+   const client=await pool.connect();
+   try{
+    await client.query('BEGIN');
+    await client.query('INSERT INTO users(id,email,password_hash,password_salt) VALUES($1,$2,$3,$4)',[userId,email,digest,salt]);
+    await client.query("INSERT INTO email_verifications(id,user_id,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '24 hours')",[randomUUID(),userId,hash(token)]);
+    await sendVerification(email,token);
+    await client.query('COMMIT');
+   }catch(e){
+    await client.query('ROLLBACK').catch(()=>{});
+    if(e.code==='23505')return json(res,202,{message:'Si cette adresse est éligible, un e-mail sera envoyé.'});
+    console.error('Inscription rejetée',e.code||e.name);
+    return replyError(res,503,'Inscription indisponible. Réessayez ultérieurement.');
+   }finally{client.release()}
+   return json(res,202,{message:'Si cette adresse est éligible, un e-mail sera envoyé.'});
+  }
+  if(req.method==='POST'&&p==='/api/auth/verify'){
+   if(!rateLimit(req,'verify',15,60*60*1000))return replyError(res,429,'Trop de demandes');
+   const input=await body(req);
+   if(typeof input.token!=='string'||!/^[a-f0-9]{64}$/.test(input.token))return replyError(res,400,'Lien invalide');
+   const client=await pool.connect();
+   try{
+    await client.query('BEGIN');
+    const q=await client.query('UPDATE email_verifications SET consumed_at=now() WHERE token_hash=$1 AND consumed_at IS NULL AND expires_at>now() RETURNING user_id',[hash(input.token)]);
+    if(!q.rowCount){await client.query('ROLLBACK');return replyError(res,400,'Lien expiré ou déjà utilisé')}
+    await client.query('UPDATE users SET email_verified_at=COALESCE(email_verified_at,now()) WHERE id=$1',[q.rows[0].user_id]);
+    await client.query('COMMIT');
+    return json(res,200,{ok:true});
+   }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}finally{client.release()}
   }
   if(req.method==='POST'&&p==='/api/auth/login'){
    if(!rateLimit(req,'login',5,15*60_000))return replyError(res,429,'Trop de tentatives de connexion');
@@ -133,7 +185,7 @@ const routed=async(req,res)=>{
   return replyError(res,404,'Route API introuvable');
  }
  if(req.method!=='GET'&&req.method!=='HEAD')return replyError(res,405,'Méthode non autorisée');
- const pages={'/':'index.html','/index.html':'index.html','/manifest.webmanifest':'manifest.webmanifest','/icon.svg':'icon.svg','/sw.js':'sw.js'};
+ const pages={'/':'index.html','/index.html':'index.html','/manifest.webmanifest':'manifest.webmanifest','/icon.svg':'icon.svg','/sw.js':'sw.js','/verify.html':'verify.html'};
  const file=pages[p];return file?serve(res,file):replyError(res,404,'Introuvable');
 };
 const server=http.createServer((req,res)=>{routed(req,res).catch(err=>{console.error('Request error',err.code||err.name||'unknown');if(!res.headersSent)replyError(res,err.status||500,err.status?err.message:'Erreur serveur');else res.end()})});
