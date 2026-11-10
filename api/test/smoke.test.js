@@ -61,11 +61,11 @@ test('API sans secrets : aucun compte ni catalogue exposé',async()=>{
   assert.match(htmlMember,/#exchange-conversation/);
   assert.match(home,/trokiva-app-shell-v1/);
   assert.match(home,/trokiva-mobile-corrections-v2/);
-  assert.match(home,/main>\\.view\\.page\\{min-height:0/);
-  assert.match(home,/#explorer>\\.toolbar\\{display:grid/);
-  assert.match(home,/#publier \\.panel textarea\\.field\\{height:78px/);
-  assert.match(home,/\\.bottom\\{position:fixed;left:0;right:0;bottom:0/);
-  assert.equal((home.match(/<style\\b/g)||[]).length,(home.match(/<\\/style>/g)||[]).length);
+  assert.match(home,/main>\.view\.page\{min-height:0/);
+  assert.match(home,/#explorer>\.toolbar\{display:grid/);
+  assert.match(home,/#publier \.panel textarea\.field\{height:78px/);
+  assert.match(home,/\.bottom\{position:fixed;left:0;right:0;bottom:0/);
+  assert.equal((home.match(/<style\b/g)||[]).length,(home.match(/<\/style>/g)||[]).length);
   assert.match(home,/\.bottom\{left:8px;right:8px;/);
   assert.match(home,/\.panel\{max-width:100%;margin-top:12px;/);
   assert.match(htmlMember,/Les comptes ne sont pas encore disponibles/);
