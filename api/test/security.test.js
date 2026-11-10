@@ -124,3 +124,12 @@ test('Email verification serializes account access and consumes superseded token
  assert.match(server,/UPDATE email_verifications SET consumed_at=now\(\) WHERE user_id=\$1 AND consumed_at IS NULL/);
  assert.match(server,/UPDATE email_verifications SET consumed_at=now\(\) WHERE token_hash=\$1 AND user_id=\$2 AND consumed_at IS NULL AND expires_at>now\(\)/);
 });
+
+test('Password reset rotates account tokens under row lock and revokes sessions',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+ assert.match(server,/SELECT id FROM users WHERE id=\$1 AND email_verified_at IS NOT NULL AND disabled_at IS NULL FOR UPDATE/);
+ assert.match(server,/UPDATE password_resets SET consumed_at=now\(\) WHERE user_id=\$1 AND consumed_at IS NULL/);
+ assert.match(server,/UPDATE password_resets SET consumed_at=now\(\) WHERE token_hash=\$1 AND user_id=\$2 AND consumed_at IS NULL AND expires_at>now\(\)/);
+ assert.match(server,/UPDATE sessions SET revoked_at=now\(\) WHERE user_id=\$1 AND revoked_at IS NULL/);
+});
