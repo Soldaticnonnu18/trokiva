@@ -60,7 +60,11 @@ test('PostgreSQL réel isolé : inscription vérifiée, annonce, offre, messages
   assert.equal((await call('/api/my/offers/'+offerId+'/accept','POST',{},cookies[1])).response.status,403);
   const accepted=await call('/api/my/offers/'+offerId+'/accept','POST',{},cookies[0]);
   assert.equal(accepted.response.status,200,JSON.stringify(accepted.result));
-  assert.equal((await call('/api/my/offers/'+offerId+'/messages','GET',undefined,cookies[2])).result.items.length,0);
+  const outsiderInbox=await call('/api/my/offers/'+offerId+'/messages','GET',undefined,cookies[2]);
+  assert.equal(outsiderInbox.response.status,404);
+  const emptyParticipantInbox=await call('/api/my/offers/'+offerId+'/messages','GET',undefined,cookies[0]);
+  assert.equal(emptyParticipantInbox.response.status,200);
+  assert.deepEqual(emptyParticipantInbox.result.items,[]);
   const message=await call('/api/my/offers/'+offerId+'/messages','POST',{content:'Lieu public convenu.'},cookies[1]);
   assert.equal(message.response.status,201,JSON.stringify(message.result));
   const inbox=await call('/api/my/offers/'+offerId+'/messages','GET',undefined,cookies[0]);
