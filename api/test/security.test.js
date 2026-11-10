@@ -11,6 +11,9 @@ test('CSRF: accept same-origin HTTPS and reject cross-site',()=>{
  assert.equal(csrfOk({headers:{host:'trokiva-api.onrender.com','sec-fetch-site':'none'}}),false);
  assert.equal(csrfOk({headers:{host:'trokiva-api.onrender.com','sec-fetch-site':'same-origin'}}),true);
  assert.equal(csrfOk({headers:{host:'trokiva-api.onrender.com',origin:'https://trokiva-preview.onrender.com','sec-fetch-site':'same-site'}}),false);
+ assert.equal(csrfOk({headers:{host:'127.0.0.1:45671',origin:'http://127.0.0.1:45671','sec-fetch-site':'same-origin'}}),true);
+ assert.equal(csrfOk({headers:{host:'localhost:45671',origin:'http://localhost:45671','sec-fetch-site':'same-origin'}}),true);
+ assert.equal(csrfOk({headers:{host:'trokiva-api.onrender.com',origin:'http://trokiva-api.onrender.com','sec-fetch-site':'same-origin'}}),false);
 });
 test('Validation annonces: reject empty, incomplete and overlong data',()=>{
  assert.equal(validListing({title:'',category:'Livres'}),false);
