@@ -20,6 +20,7 @@
  <div class="card"><h2 id="listing-form-title">Préparer une annonce</h2><form id="listing-form"><div class="grid"><label class="field">Objet proposé<input name="title" minlength="3" maxlength="100" required></label><label class="field">Catégorie<select name="category" required><option value="">Choisir une catégorie</option><option>Mode et accessoires</option><option>Électronique</option><option>Maison</option><option>Livres et études</option><option>Sport et loisirs</option><option>Autres</option></select></label></div><label class="field">Description de l'objet<textarea name="description" maxlength="1200" placeholder="État, caractéristiques, accessoires…"></textarea></label><div class="grid"><label class="field">Ce que vous recherchez<input name="wanted" maxlength="100"></label><label class="field">Ville (sans adresse précise)<input name="city" maxlength="100"></label></div><div class="notice">Enregistrer crée un brouillon privé. La publication n'est possible qu'avec une description d'au moins 20 caractères et une ville.</div><div class="actions"><button class="btn" type="submit">Enregistrer le brouillon</button><button class="btn secondary" type="button" id="cancel-edit">Nouvelle annonce</button></div></form></div>
  <div class="card"><h2>Mes annonces</h2><div id="my-listings" aria-live="polite"></div></div>
  <div class="card"><h2>Découvrir les objets réellement disponibles</h2><p class="muted small">Seules les annonces publiées par des membres vérifiés apparaîtront ici. Aucune annonce fictive.</p><div id="public-listings" aria-live="polite"></div></div>
+ <div class="card" id="moderation" hidden><h2>Modération — signalements en attente</h2><p class="muted small">Réservé au compte administrateur autorisé. Toute action de masquage est définitive jusqu’à nouvelle vérification.</p><div id="moderation-reports" aria-live="polite"></div></div>
  <div class="card"><h2>Mes propositions de troc</h2><p class="muted small">Une proposition ne signifie pas qu'un échange a été effectué. Les modalités restent à convenir entre membres.</p><div id="my-offers" aria-live="polite"></div></div>
 </section>
 </main>
@@ -39,7 +40,7 @@ function setTab(tab){for(const key of forms){el(key).hidden=key!==tab;const btn=
 document.querySelectorAll('[data-tab]').forEach(btn=>btn.addEventListener('click',()=>{feedback('');setTab(btn.dataset.tab)}));
 function setIdentity(user){loggedIn=!!user;el('anonymous').hidden=loggedIn;el('member').hidden=!loggedIn;if(user)el('identity').textContent='Connecté : '+user.email}
 async function refresh(){
- try{const me=await api('/api/me');setIdentity(me.user);if(me.user)await Promise.all([loadListings(),loadPublicListings(),loadOffers()])}catch(e){feedback(e.message);setIdentity(null)}
+ try{const me=await api('/api/me');setIdentity(me.user);if(me.user){await Promise.all([loadListings(),loadPublicListings(),loadOffers()]);await loadModeration()}}catch(e){feedback(e.message);setIdentity(null)}
 }
 async function readiness(){
  try{
@@ -62,7 +63,7 @@ for(const name of forms)el(name).addEventListener('submit',async e=>{
  const data=Object.fromEntries(new FormData(e.target));
  const routes={login:'/api/auth/login',register:'/api/auth/register',forgot:'/api/auth/request-password-reset',resend:'/api/auth/resend-verification'};
  try{const result=await api(routes[name],{method:'POST',body:JSON.stringify(data)});
-  if(name==='login'){setIdentity(result.user);e.target.reset();await Promise.all([loadListings(),loadPublicListings(),loadOffers()]);feedback('Connexion réussie.')}
+  if(name==='login'){setIdentity(result.user);e.target.reset();await Promise.all([loadListings(),loadPublicListings(),loadOffers()]);await loadModeration();feedback('Connexion réussie.')}
   else{feedback(result.message||'Demande enregistrée.');e.target.reset()}
  }catch(err){feedback(err.message)}finally{button.disabled=false}
 });
@@ -118,7 +119,21 @@ async function loadPublicListings(){
    try{await api('/api/my/offers',{method:'POST',body:JSON.stringify({listingId:listing.id,message:trimmed})});await loadOffers();feedback('Proposition envoyée au propriétaire de cette annonce.')}
    catch(e){feedback(e.message)}finally{button.disabled=false}
   });
-  actions.append(button);card.append(info,actions);host.append(card)
+  const report=document.createElement('button');report.type='button';report.className='btn secondary';report.textContent='Signaler';
+  report.addEventListener('click',async()=>{
+   const categories=['prohibited','fraud','misleading','harassment','other'];
+   const choice=prompt('Motif : 1 Objet interdit, 2 Fraude, 3 Annonce trompeuse, 4 Harcèlement, 5 Autre. Saisissez le numéro.');
+   if(choice===null)return;
+   const reason=categories[Number(choice)-1];
+   if(!reason){feedback('Motif de signalement invalide.');return}
+   const details=prompt('Précisez le problème sans mentionner de données personnelles (facultatif, 1000 caractères maximum).');
+   if(details===null)return;
+   if(details.length>1000){feedback('Description trop longue.');return}
+   report.disabled=true;
+   try{const answer=await api('/api/reports',{method:'POST',body:JSON.stringify({listingId:listing.id,reason,details})});feedback(answer.message||'Signalement transmis.')}
+   catch(e){feedback(e.message)}finally{report.disabled=false}
+  });
+  actions.append(button,report);card.append(info,actions);host.append(card)
  }
 }
 async function decideOffer(id,verb){
@@ -145,6 +160,33 @@ async function loadOffers(){
   }
   card.append(info,buttons);host.append(card);
  }
+}
+async function loadModeration(){
+ const container=el('moderation');
+ const list=el('moderation-reports');
+ container.hidden=true;list.replaceChildren();
+ try{
+  const result=await api('/api/admin/reports');
+  container.hidden=false;
+  if(!result.items?.length){list.append(safeText('p','Aucun signalement en attente.'));return}
+  for(const report of result.items){
+   const card=document.createElement('article');card.className='item';
+   const info=document.createElement('div');
+   info.append(safeText('h3',report.title),safeText('p',report.reason+' · '+report.listing_state),safeText('p',report.details||'Aucun détail transmis'));
+   const actions=document.createElement('div');actions.className='actions';
+   for(const [title,verb] of [['Masquer l’annonce','hide'],['Classer sans suite','dismiss']]){
+    const button=document.createElement('button');button.type='button';button.className='btn secondary';button.textContent=title;
+    button.addEventListener('click',async()=>{
+     if(!confirm(title+' ?'))return;
+     button.disabled=true;
+     try{await api('/api/admin/reports/'+report.id+'/'+verb,{method:'POST',body:'{}'});await loadModeration();await loadPublicListings();feedback('Décision de modération enregistrée.')}
+     catch(e){feedback(e.message);button.disabled=false}
+    });
+    actions.append(button);
+   }
+   card.append(info,actions);list.append(card);
+  }
+ }catch(e){if(!/Introuvable/.test(e.message))feedback('Modération indisponible : '+e.message)}
 }
 readiness();
 })();
