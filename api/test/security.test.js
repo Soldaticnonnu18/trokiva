@@ -18,3 +18,14 @@ test('Validation annonces: reject empty, incomplete and overlong data',()=>{
  assert.equal(validListing({title:'Livre de cours',category:'Livres',description:'a'.repeat(1201)}),false);
  assert.equal(validListing({title:'Livre',category:'Livres',wanted:42}),false);
 });
+
+test('Moderation lock: owner cannot restore or republish an admin-removed listing',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+ const schema=readFileSync(new URL('../schema.sql',import.meta.url),'utf8');
+ assert.match(schema,/ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderation_hidden_at timestamptz/);
+ assert.match(server,/moderation_hidden_at=COALESCE\(moderation_hidden_at,now\(\)\)/);
+ assert.match(server,/state='hidden' AND moderation_hidden_at IS NULL RETURNING id,state/);
+ assert.match(server,/state='draft' AND moderation_hidden_at IS NULL RETURNING id,state/);
+ assert.match(server,/state='draft' AND moderation_hidden_at IS NULL AND length\(trim\(description\)\)>=20/);
+});
