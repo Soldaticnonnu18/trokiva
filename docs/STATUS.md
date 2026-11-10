@@ -146,3 +146,17 @@ Date : 10 novembre 2026.
 - API Render : `dep-dbpiqprm8hqs73e1psig`, état `live`, même commit.
 - Journaux Render : **5 tests réussis sur 5, 0 échec**, comprenant la syntaxe JavaScript PWA et la présence des fonctions de navigation.
 - La validation tactile iPhone sur appareil réel reste à réaliser ; ne pas déclarer ce contrôle fait sans retour utilisateur.
+
+
+## Sécurité et vraies propositions de troc — 10 novembre 2026
+- Ajout SQL `exchange_offers` : sender, recipient, annonce, message et statut réel. Unicité des propositions en attente par annonce et expéditeur ; impossible d'envoyer à soi-même via contrainte SQL.
+- Routes privées `GET/POST /api/my/offers` et `POST /api/my/offers/:id/accept|decline|cancel`. Authentification vérifiée, accès limité aux deux parties, refus de comptes désactivés.
+- L'acceptation réserve l'annonce dans une transaction et refuse les propositions concurrentes ; ceci ne certifie pas un échange physique.
+- Portail `compte.html` : liste réelle des annonces publiques, soumission d'offre et décisions accessibles selon le compte et le statut. Aucune annonce ou utilisateur fictif intégré.
+- Nouveau drapeau de sécurité `ENABLE_EXCHANGES=true` requis pour activer les propositions ; **désactivé par défaut**, y compris une fois PostgreSQL raccordée. Les boutons d'offres restent inactifs tant que le serveur annonce `exchanges:disabled`.
+- Migration et `/api/ready` mis à jour pour **six tables**, dont `exchange_offers`. Schéma non exécuté en production.
+- Mutations API durcies : vérification same-origin HTTPS / CSRF et type MIME JSON requis.
+- Tests ajoutés : routes d'offres bloquées sans base, contrôle CSRF et validation des annonces.
+- À développer/tester avant ouverture : proposition/acceptation sur PostgreSQL réel, signalements et modération, messagerie privée, étapes et confirmation bilatérale d'échange, prévention des abus persistante, domaine de messagerie TROKIVA, sauvegardes et politique de confidentialité.
+- Base Render gratuite `trokiva-db` expire le **10 décembre 2026** : éviter une ouverture pérenne sans plan de conservation.
+- Les tests hors base ne valent pas recette de troc réel ; ne pas activer `ENABLE_EXCHANGES` avant les contrôles.
