@@ -73,3 +73,18 @@ test('Private messages require accepted offer, participant and active listing',a
  assert.match(server,/l\.moderation_hidden_at IS NULL/);
  assert.match(server,/const requiredTables=\[[^\]]*'exchange_messages'\]/);
 });
+
+test('Two-party exchange confirmation requires distinct participants and locks reservation',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+ const schema=readFileSync(new URL('../schema.sql',import.meta.url),'utf8');
+ assert.match(schema,/CREATE TABLE IF NOT EXISTS exchange_confirmations/);
+ assert.match(schema,/PRIMARY KEY\(offer_id,user_id\)/);
+ assert.match(server,/confirmRoute=p\.match/);
+ assert.match(server,/counterpart\.disabled_at IS NULL/);
+ assert.match(server,/FOR UPDATE OF l,e/);
+ assert.match(server,/ON CONFLICT \(offer_id,user_id\) DO NOTHING/);
+ assert.match(server,/if\(count===2\)/);
+ assert.match(server,/UPDATE listings SET state='exchanged'/);
+ assert.match(server,/moderation_hidden_at IS NULL RETURNING id/);
+});
