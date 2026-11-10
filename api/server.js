@@ -17,7 +17,7 @@ const registrationsEnabled=process.env.ENABLE_REGISTRATION==='true' && emailRead
 const pool=dbUrl?new pg.Pool({connectionString:dbUrl,max:6,connectionTimeoutMillis:5000,ssl:process.env.DB_SSL==='true'?{rejectUnauthorized:true}:undefined}):null;
 const buckets=new Map();
 const hash=v=>createHash('sha256').update(v).digest('hex');
-const validEmail=v=>typeof v==='string' && v.length<=254 && v.includes('@') && /^[^ @]+@[^ @]+[.][^ @]+$/.test(v);
+const validEmail=v=>typeof v==='string' && v.length<=254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && !v.includes('..');
 const createSecret=()=>randomBytes(32).toString('hex');
 async function sendVerification(email,token) {
  const link=(publicUrl.endsWith('/')?publicUrl.slice(0,-1):publicUrl)+'/verify.html#token='+token;
@@ -203,7 +203,8 @@ const routed=async(req,res)=>{
     await client.query('BEGIN');
     const q=await client.query('UPDATE password_resets SET consumed_at=now() WHERE token_hash=$1 AND consumed_at IS NULL AND expires_at>now() RETURNING user_id',[hash(token)]);
     if(!q.rowCount){await client.query('ROLLBACK');return replyError(res,400,'Lien expiré ou déjà utilisé')}
-    await client.query('UPDATE users SET password_hash=$2,password_salt=$3 WHERE id=$1 AND disabled_at IS NULL',[q.rows[0].user_id,digest,salt]);
+    const updated=await client.query('UPDATE users SET password_hash=$2,password_salt=$3 WHERE id=$1 AND disabled_at IS NULL AND email_verified_at IS NOT NULL RETURNING id',[q.rows[0].user_id,digest,salt]);
+    if(!updated.rowCount){await client.query('ROLLBACK');return replyError(res,400,'Ce compte ne peut pas être réinitialisé')}
     await client.query('UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL',[q.rows[0].user_id]);
     await client.query('UPDATE password_resets SET consumed_at=now() WHERE user_id=$1 AND consumed_at IS NULL',[q.rows[0].user_id]);
     await client.query('COMMIT');
