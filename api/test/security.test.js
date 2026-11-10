@@ -53,3 +53,11 @@ test('Offer creation locks the actual published listing to avoid a reservation r
  assert.match(server,/INSERT INTO exchange_offers[\s\S]*?l\.state='published'[\s\S]*?FOR UPDATE OF l RETURNING id,listing_id,status,created_at/);
  assert.match(server,/FOR UPDATE OF l,e/);
 });
+
+test('Moderation records success only if the listing was actually hidden',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+ assert.match(server,/const hidden=await client\.query\("UPDATE listings SET state='hidden'/);
+ assert.match(server,/if\(!hidden\.rowCount\)/);
+ assert.match(server,/Annonce déjà retirée ou devenue indisponible/);
+});
