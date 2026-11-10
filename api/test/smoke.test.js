@@ -35,6 +35,11 @@ test('API sans secrets : aucun compte ni catalogue exposé',async()=>{
   assert.equal((await me.json()).user,null);
   const missing=await fetch(base+'/api/my/listings');
   assert.equal(missing.status,503);
+  const reset=await fetch(base+'/api/auth/request-password-reset',{method:'POST',headers:{'Content-Type':'application/json',Origin:base},body:JSON.stringify({email:'demo@example.org'})});
+  assert.equal(reset.status,503);
+  const resetPage=await fetch(base+'/reset-password.html');
+  assert.equal(resetPage.status,200);
+  assert.match(await resetPage.text(),/Nouveau mot de passe/);
   const verify=await fetch(base+'/verify.html');
   assert.equal(verify.status,200);
   const html=await verify.text();
