@@ -268,5 +268,13 @@ const routed=async(req,res)=>{
  const file=pages[p];return file?serve(res,file):replyError(res,404,'Introuvable');
 };
 const server=http.createServer((req,res)=>{routed(req,res).catch(err=>{console.error('Request error',err.code||err.name||'unknown');if(!res.headersSent)replyError(res,err.status||500,err.status?err.message:'Erreur serveur');else res.end()})});
-if(process.env.RUN_SERVER!=='false')server.listen(port,()=>console.log('TROKIVA API listening on port',port));
+if(process.env.RUN_SERVER!=='false') {
+ if(process.env.RUN_MIGRATIONS_ON_BOOT==='true') {
+  if(!dbUrl)throw new Error('Migration demandée mais DATABASE_URL absente');
+  const {migrateDatabase}=await import('./migrate.js');
+  const tables=await migrateDatabase(dbUrl);
+  console.log('TROKIVA schema migration verified:',tables.length,'tables');
+ }
+ server.listen(port,()=>console.log('TROKIVA API listening on port',port));
+}
 export {server,validListing};
