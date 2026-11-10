@@ -46,3 +46,10 @@ test('Moderation authorization requires specific existing user ID, not an email 
  assert.match(server,/u\.id!==adminId/);
  assert.doesNotMatch(server,/TROKIVA_ADMIN_EMAIL/);
 });
+
+test('Offer creation locks the actual published listing to avoid a reservation race',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+ assert.match(server,/INSERT INTO exchange_offers[\s\S]*?l\.state='published'[\s\S]*?FOR UPDATE OF l RETURNING id,listing_id,status,created_at/);
+ assert.match(server,/FOR UPDATE OF l,e/);
+});
